@@ -1,0 +1,66 @@
+<!--
+   linux 无root权限编译EPICS.html
+   
+   Copyright 2019 ihep <ihep@IHEP-HP>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+   
+   
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN">
+
+<head>
+	<title>无root权限情况下编译代码库依赖问题</title>
+	<meta http-equiv="content-type" content="text/html;charset=GBK" />
+	<meta name="generator" content="Geany 1.33" />
+</head>
+
+<body>
+	<h1>无 root 权限情况下编译代码产生库依赖问题</h1>
+	<h2>1. 使用 yum 为当前用户安装库</h2>
+	<p>
+		以 readline-devel 为例，首先下载 rpm 包：<br /><code>yumdownloader readline-devel</code><br />
+		然后解压<br /><code>rpm2cpio readline-devel-6.2-10.el7.x86_64.rpm | cpio -idvm</code><br />
+		解压生成 usr 文件夹，下一级可能有 bin/ include/ lib64/ share/ 等文件夹。<br />
+		将 usr/bin/ 添加到系统变量 PATH 内。可以通过修改 ~/.bashrc 文件实现。<br /><code>export PATH=${PATH}:${HOME}/usr/bin/:${HOME}/usr/include/</code><br />
+		修改之后可以通过重新登录或 <code>source ~/.bashrc</code> 使之生效。
+	</p>
+	<p>
+		若在编译过程中提示编译错误类似：<br /><keyboard>/usr/bin/ld: cannot find -lhdf5</keyboard><br />
+		这表示找不到库文件 libhdf5.so。可以使用命令 <code>gcc -lhdf5 --verbose</code> 查询能否搜索到制定的库文件。<br />
+		若安装了软件，找到了库文件的路径，但仍提示上述错误，则表示 gcc 搜索路径不包含该库文件所在路径。需要将库文件所在的路径加入到搜索路径中。修改 ~/.bashrc 文件<br />
+		<code>export LD_LIBRARY_PATH=${HOME}/usr/lib64/:${LD_LIBRARY_PATH}</code><br />
+		若修改变量 LD_LIBRARY_PATH 无效果，则修改变量 LIBRARY_PATH。
+	</p>
+	<p>
+		若是找不到头文件（*.h）的问题，可以使用 <code>cpp -v</code> 查看系统指定的头文件路径。若当前用户的头文件安装路径并未在其中，则需要添加。同样修改~/.bashrc 文件<br />
+		<code># gcc 搜索头文件路径<br />export C_INCLUDE_PATH=${HOME}/usr/include<br /># g++ 搜索头文件路径<br />export CPLUS_INCLUDE_PATH=${HOME}/usr/include</code>
+	</p>
+	
+	<p>查看系统指定的头文件路径 <code>cpp -v</code></p>
+	
+	<h2>参考内容</h2>
+	<p>
+		<a href="https://www.cnblogs.com/zhming26/p/6164131.html">/usr/bin/ld: cannot find -lxxx 的解决办法</a><br />
+		<a href="https://blog.csdn.net/ztguang/article/details/51015839">Linux添加头文件路径</a><br />
+		<a href="https://blog.csdn.net/ccbrid/article/details/79251359">非root用户解决/usr/bin/ld: cannot find -lxx缺失库函数安装</a>
+	</p>
+</body>
+
+</html>
