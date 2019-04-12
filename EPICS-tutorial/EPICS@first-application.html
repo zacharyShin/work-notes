@@ -1,0 +1,130 @@
+<!--
+   EPICS 创建第一个应用.html
+   
+   Copyright 2019 ihep <ihep@IHEP-HP>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+   
+   
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ch-ZN" lang="ch-ZN">
+
+<head>
+	<title>第一个 EPICS 应用</title>
+	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+	<meta name="generator" content="Geany 1.33" />
+</head>
+
+<body>
+
+<h1>创建第一个 EPICS IOC 应用</h1>
+<p>编译 EPICS base 后，可以创建一个 example 应用以了解 IOC 结构。创建过程使用 &lt;base&gt;/bin/&lt;arch&gt;/makeBaseApp.pl 实现。<br />
+<code>mkdir work<br />cd work<br />mkdir <strong>name</strong></code> （top目录的名称，如myfirstooc）<br />
+下文称此 top 目录为 ioctop。
+</p>
+
+<p>
+	<code>cd <strong>ioctop</strong><br />&lt;base&gt;/bin/&lt;arch&gt;/makeBaseApp.pl -t example <strong>appname</strong></code>
+	（选择一个应用名，如firstioc）<br />
+	<code>&lt;base&gt;/bin/&lt;arch&gt;/makeBaseApp.pl -i -t example <strong>appname</strong></code><br />
+	系统打印输出：<br />
+	<kbd>Using target architecture linux-x86_64 (only one available)<br />
+		The following applications are available:<br />
+		firstioc<br />
+		What application should the IOC(s) boot?<br />
+		The default uses the IOC's name, even if not listed above.<br />
+		Application name? 
+	</kbd><br />
+	“回车”键确认，创建应用。
+</p>
+
+<p>
+	查看文件夹内生成的文件与文件夹，大致了解 IOC 应用结构。<br /><code>ls</code><br />
+	你可以看到：<br />
+	<kbd>Makefile configure/ iocBoot/ <strong>appname</strong>App/</kbd>
+</p>
+
+<p>
+	在top目录编译。<br /><code>cd <strong>ioctop</strong><br />make clean install<br />make</code><br />
+</p>
+
+<p>
+	使用 st.cmd 脚本启动 IOC。<br /><code>cd iocBoot/ioc<strong>appname</strong><br />../../bin/linux-x86_64/<strong>appname</strong> st.cmd</code><br />
+	此时进入 ioc shell。
+</p>
+
+<p>
+	一些可以在 ioc shell 内执行的命令
+	<table border="1">
+		<tr>
+			<td>命令</td>
+			<td>功能</td>
+		</tr>
+		<tr>
+			<td>dbl</td>
+			<td>列出此 ioc 内所有 record</td>
+		</tr>
+		<tr>
+			<td>dbgrep <strong>search_pattern</strong></td>
+			<td>列出此 ioc 内所有符合搜索条件的 record</td>
+		</tr>
+		<tr>
+			<td>dbnr</td>
+			<td>统计 record 数量，以类型分类</td>
+		</tr>
+		<tr>
+			<td>dbpr <strong>record_name</strong></td>
+			<td>输出 record 详细信息</td>
+		</tr>
+		<tr>
+			<td>dbpf <strong>record_name value</strong></td>
+			<td>写入record</td>
+		</tr>
+		<tr>
+			<td>casr</td>
+			<td>CA服务器报告-输出链接此ioc的用户</td>
+		</tr>
+		<tr>
+			<td>dbcar</td>
+			<td>CA报告-输出CA链接状态</td>
+		</tr>
+		<tr>
+			<td>dbior</td>
+			<td>输入输出报告（input output report）</td>
+		</tr>
+		<tr>
+			<td>dbhcr</td>
+			<td>硬件配置报告（hardware configuration report）</td>
+		</tr>
+		<tr>
+			<td>help</td>
+			<td>帮助：ioc命令列表</td>
+		</tr>
+		<tr>
+			<td>exit</td>
+			<td>关闭ioc</td>
+		</tr>
+	</table>
+</p>
+
+<code></code>
+	
+</body>
+
+</html>

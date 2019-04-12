@@ -1,0 +1,50 @@
+<!--
+   EPICS MEDM installation.html
+   
+   Copyright 2019 ihep <ihep@IHEP-HP>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+   
+   
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN">
+
+<head>
+	<title>MEDM 编译</title>
+	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+	<meta name="generator" content="Geany 1.33" />
+</head>
+
+<body>
+	<h1>EPICS MEDM 编译</h1>
+	
+	<h2>1. 下载 MEDM 源码</h2>
+	<p>从 <a href="https://epics.anl.gov/extensions/medm/index.php">EPICS 主页</a>下载 tar 包，解压到 &lt;extensions&gt;/src/。</p>
+	<code>wget https://epics.anl.gov/download/extensions/MEDM3_1_11.tar.gz<br />tar -vxzf MEDM3_1_13.tar.gz -C &lt;extensions&gt;/src/</code>
+	
+	<h2>2. 编译</h2>
+	<code>make</code>
+	<p>fatal error: X11/Intrinsic.h: No such file or directory -- 需要安装 libXt<br />fatal error: Xm/XmP.h: No such file or directory -- 需要安装motif-dev</p>
+	
+	<h2>3. 测试</h2>
+	<code>cd &lt;extensions&gt;/linux-86_64/<br />./medm</code>
+	<p>MEDM 运行对话框：<br /><img src="png/medm.png"/></p>
+</body>
+
+</html>

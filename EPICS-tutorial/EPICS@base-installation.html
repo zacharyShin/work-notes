@@ -1,0 +1,58 @@
+<html>
+<body>
+
+
+<h1>EPICS base 编译</h1>
+
+<h2>1. 下载 EPICS base 源代码</h2>
+<p><a href="https://epics.anl.gov/base/index.php">EPICS 主页</a>提供了 EPICS base 源码的 tar 包，可以下载 tar 包解压再进行编译。</p>
+<code>wget https://epics.anl.gov/download/base/base-3.15.6.tar.gz<br />tar -vxzf base-3.15.6.tar.gz -C .</code>
+<p>或者，项目也可以通过<a href="https://github.com/epics-base/epics-base">Github</a>或<a href="https://git.launchpad.net/epics-base">git仓库</a>克隆到本地。</p>
+<code>git clone git://git.launchpad.net/epics-base<br />git clone https://github.com/epics-base/epics-base.git</code>
+<p>选择 EPICS 版本：当前（2019-1-25）稳定 release 版本为 3.15 系列，最新版本为 7.0 系列，依据需求自行选择。</p>
+
+<h2>2. 建立 base 的软链接（可选）</h2>
+<p>建立 base 文件夹的软链接可以方便之后的操作，无须时时记住 base 的版本号</p>
+<code>ln -s base-3.15.6 base</code>
+
+<h2>3. 设置环境变量 EPICS_HOST_ARCH</h2>
+<p>EPICS 根据不同操作系统编译内容有不同，因此需要使用环境变量 EPICS_HOST_ARCH 说明操作系统类型。运行 base文件夹下 startup/EpicsHostArch 脚本可以自动识别与设置该变量：</p>
+<code>cd base<br />export EPICS_HOST_ARCH=`startup/EpicsHostArch`</code>
+<p>也可以使用 export 命令直接设置。</p>
+<code>export EPICS_HOST_ARCH=linux-x86_64</code>
+<p>可以使用echo命令检验。若打印输出正确的操作系统类型，则设置成功。</p>
+<code>echo $EPICS_HOST_ARCH</code>
+
+<h2>4. 编译</h2>
+<p>在 &lt;base&gt; 路径下进行编译。</p>
+<code>make</code>
+<h3>1 - 编译错误 ERROR</h3>
+<code>../../../src/libCom/osi/os/default/epicsReadline.c:79:31: fatal error: readline/readline.h: No such file or directory<br />
+ #include <readline/readline.h><br />
+                               ^<br />
+compilation terminated.</code>
+<p>解决方法：安装 readline</p>
+<code>yum install readline.x86_64 readline-devel.x86_64</code>
+
+<h2>5. 测试</h2>
+<p>若编译过程无错误，则可以进入 base/bin/linux-x86_64 运行 softIoc，测试是否编译成功。</p>
+<code>./softIoc</code>
+<p>命令行每行起始提示会变为「epics>」。输入 help 可以查看所有可以使用的命令，可以输入 date 可以查看当前时间。</p>
+<code>epics> help<br />epics> date</code>
+
+<h2>6. 修改 ~/.bashrc 设置一些环境变量</h2>
+<p>在 ~/.bashrc 文件中定义环境变量，bash 可以在每次启动时读取文件内容进行设置。</p>
+<kbd>export EPICS_BASE="/home/guest/epics/base"<br />
+export EPICS_HOST_ARCH=linux-x86_64<br />
+export EPICS_BASE_BIN=${EPICS_BASE}/bin/${EPICS_HOST_ARCH}<br />
+export EPICS_BASE_LIB=${EPICS_BASE}/lib/${EPICS_HOST_ARCH}<br />
+if [ "" = "${LD_LIBRARY_PATH}" ]; then<br />
+export LD_LIBRARY_PATH=${EPICS_BASE_LIB}<br />
+else<br />
+export LD_LIBRARY_PATH=${EPICS_BASE_LIB}:${LD_LIBRARY_PATH}<br />
+<br />
+export PATH=${PATH}:${EPICS_BASE_BIN}
+</kbd>
+
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!--
+   EPICS synApps安装.html
+   
+   Copyright 2019 ihep <ihep@IHEP-HP>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+   
+   
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN">
+
+<head>
+	<title>EPICS synApps</title>
+	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+	<meta name="generator" content="Geany 1.33" />
+</head>
+
+<body>
+
+<h1>EPICS synApps编译</h1>
+
+<h2>1. 下载EPICS synApps 源代码</h2>
+<p><a href="https://www.aps.anl.gov/BCDA/synApps">synApps 主页</a>与 <a href="https://epics.anl.gov/index.php">EPICS 主页</a>不同，但是可以从 <a href="https://epics.anl.gov/distributions/index.php">EPICS 主页</a>进行访问。通过下载 tar 包获取源码。</p>
+<code>wget https://epics.anl.gov/bcda/synApps/tar/synApps_6_0.tar.gz<br />tar -vxzf synApps_6_0.tar.gz</code>
+<del>
+<p>synApps 在 由许多不同的模块构成，可以由用户自行选择所需的模块进行下载编译。tar 包内包含所有模块的源码，若只想下载所需模块可以尝试从 Github 克隆。（未充分测试）</p>
+<code>wget https://raw.githubusercontent.com/EPICS-synApps/support/master/assemble_synApps.sh<br />vi assemble_synApps.sh<br />./assemble_synApps.sh</code>
+<p>修改assemble_synApps.sh文件，修改设置正确的 EPICS_BASE 变量，同时可以用 # 注释掉不需要的模块。</p>
+<p>有一些模块的使用需要依赖其他 synApps 模块（比如 areaDetector 模块依赖 asyn，busy，calc，sscan 和 autosave 模块；而 sscan 模块依赖 seq 模块。需要视需求下载全部需要的模块。）</p>
+<p><a href="https://www.aps.anl.gov/BCDA/synApps/Included-Modules">synApps 主页</a>可以查看所有包含的模块，也可在 <a href="https://github.com/epics-modules">Github</a> 查看仓库。</p>
+</del>
+
+<h2>2. 修改 support/configure/RELEASE 文件</h2>
+<p>修改 support/configure/RELEASE 文件和 support/configure/CONFIG_SITE 的 SUPPORT 和 EPICS_BASE 变量</p>
+<code>cd synApps/support/configure<br />vi RELEASE<br />vi CONFIG_SITE</code>
+<p><del>若安装环境非linux系统，需要编辑 EPICS_BASE.&lt;arch&gt; 和 SUPPORT.&lt;arch&gt;。（未测试）<br />
+修改 synApps/support/ipac-&lt;version&gt;/drvIpac/drvIpac.dbd 和 synApps/support/&lt;version&gt;/motorApp/Makefile 文件。（未测试）</del></p>
+</body>
+
+<h2>3. 编译</h2>
+<p>在 support 文件夹，进行编译（先后两次命令执行）</p>
+<code>make release<br />make</code>
+<p>可能出现的问题：提示无法找到文件 libusb.h。<br />解决方法：安装 libusb 与 libusbx，有可能需要 root 权限<br /></p>
+<code>yum -y install libusb-devel.x86_64 libusbx-devel.x86_64</code>
+<p>可能出现的问题：re2c: Command not found。<br />解决方法：下载安装 <a href="https://mirrors.aliyun.com/epel/7/x86_64/Packages/r/re2c-0.14.3-2.el7.x86_64.rpm">re2c</a>，有可能需要 root 权限<br /></p>
+
+<h2>参考文献</h2>
+<p>synApps 5.8: <a href="https://epics.anl.gov/bcda/synApps/synApps.html">https://epics.anl.gov/bcda/synApps/synApps.html</a></p>
+
+</html>

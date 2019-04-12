@@ -1,0 +1,583 @@
+<!--
+   EPICS CA client command.html
+   
+   Copyright 2019 ihep <ihep@IHEP-HP>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+   
+   
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN">
+
+<head>
+	<title>CA client 命令行命令</title>
+	<meta http-equiv="content-type" content="text/html;charset=GBK" />
+	<meta name="generator" content="Geany 1.33" />
+</head>
+
+<body>
+	<h2><a name="CommandTools">Command Line Tools</a></h2>
+
+<h3><a name="caget">caget</a></h3>
+<pre>caget [options] &lt;PV name&gt; ...</pre>
+
+<h4>Description</h4>
+
+<p>Get and print value for PV(s).</p>
+
+<p>The values for one or multiple PVs are read and printed to stdout. The
+DBR_... format in which the data is read, the output format, and a number of
+details of how integer and float values are represented can be controlled using
+command line options.</p>
+
+<p>When getting multiple PVs, their order on the command line is retained in
+the output.</p>
+
+<table border="1">
+  <caption></caption>
+  <thead>
+    <tr>
+      <th>Option</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>-h</td>
+      <td>Print usage information</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>CA options:</strong></td>
+    </tr>
+    <tr>
+      <td>-w &lt;sec&gt;</td>
+      <td>Wait time, specifies longer CA timeout, default is 1.0 second</td>
+    </tr>
+    <tr>
+      <td>-c</td>
+      <td>Asynchronous get (use ca_get_callback instead of ca_get)</td>
+    </tr>
+    <tr>
+      <td>-p &lt;prio&gt;</td>
+      <td>CA priority (0-99, default 0=lowest)</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Format and data type options:</strong></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>Default output format is "name value"</td>
+    </tr>
+    <tr>
+      <td>-t</td>
+      <td>Terse mode - print only value, without name</td>
+    </tr>
+    <tr>
+      <td>-a</td>
+      <td>Wide mode "name timestamp value stat sevr" (read PVs as
+      DBR_TIME_xxx)</td>
+    </tr>
+    <tr>
+      <td>-d &lt;type&gt;</td>
+      <td>Request specific dbr type; use string (DBR_ prefix may be omitted)<br>
+        or number of one of the following types:<br>
+        <table border="1">
+          <tbody>
+            <tr>
+              <td>DBR_STRING</td>
+              <td>0</td>
+              <td>DBR_STS_FLOAT</td>
+              <td>9</td>
+              <td>DBR_TIME_LONG</td>
+              <td>19</td>
+              <td>DBR_CTRL_SHORT</td>
+              <td>29</td>
+            </tr>
+            <tr>
+              <td>DBR_INT</td>
+              <td>1</td>
+              <td>DBR_STS_ENUM</td>
+              <td>10</td>
+              <td>DBR_TIME_DOUBLE</td>
+              <td>20</td>
+              <td>DBR_CTRL_INT</td>
+              <td>29</td>
+            </tr>
+            <tr>
+              <td>DBR_SHORT</td>
+              <td>1</td>
+              <td>DBR_STS_CHAR</td>
+              <td>11</td>
+              <td>DBR_GR_STRING</td>
+              <td>21</td>
+              <td>DBR_CTRL_FLOAT</td>
+              <td>30</td>
+            </tr>
+            <tr>
+              <td>DBR_FLOAT</td>
+              <td>2</td>
+              <td>DBR_STS_LONG</td>
+              <td>12</td>
+              <td>DBR_GR_SHORT</td>
+              <td>22</td>
+              <td>DBR_CTRL_ENUM</td>
+              <td>31</td>
+            </tr>
+            <tr>
+              <td>DBR_ENUM</td>
+              <td>3</td>
+              <td>DBR_STS_DOUBLE</td>
+              <td>13</td>
+              <td>DBR_GR_INT</td>
+              <td>22</td>
+              <td>DBR_CTRL_CHAR</td>
+              <td>32</td>
+            </tr>
+            <tr>
+              <td>DBR_CHAR</td>
+              <td>4</td>
+              <td>DBR_TIME_STRING</td>
+              <td>14</td>
+              <td>DBR_GR_FLOAT</td>
+              <td>23</td>
+              <td>DBR_CTRL_LONG</td>
+              <td>33</td>
+            </tr>
+            <tr>
+              <td>DBR_LONG</td>
+              <td>5</td>
+              <td>DBR_TIME_INT</td>
+              <td>15</td>
+              <td>DBR_GR_ENUM</td>
+              <td>24</td>
+              <td>DBR_CTRL_DOUBLE</td>
+              <td>34</td>
+            </tr>
+            <tr>
+              <td>DBR_DOUBLE</td>
+              <td>6</td>
+              <td>DBR_TIME_SHORT</td>
+              <td>15</td>
+              <td>DBR_GR_CHAR</td>
+              <td>25</td>
+              <td>DBR_STSACK_STRING</td>
+              <td>37</td>
+            </tr>
+            <tr>
+              <td>DBR_STS_STRING</td>
+              <td>7</td>
+              <td>DBR_TIME_FLOAT</td>
+              <td>16</td>
+              <td>DBR_GR_LONG</td>
+              <td>26</td>
+              <td>DBR_CLASS_NAME</td>
+              <td>38</td>
+            </tr>
+            <tr>
+              <td>DBR_STS_SHORT</td>
+              <td>8</td>
+              <td>DBR_TIME_ENUM</td>
+              <td>17</td>
+              <td>DBR_GR_DOUBLE</td>
+              <td>27</td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>DBR_STS_INT</td>
+              <td>8</td>
+              <td>DBR_TIME_CHAR</td>
+              <td>18</td>
+              <td>DBR_CTRL_STRING</td>
+              <td>28</td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Enum format:</strong></td>
+    </tr>
+    <tr>
+      <td>-n</td>
+      <td>Print DBF_ENUM value as number (default is enum string)</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Arrays:</strong></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>Value format: Print number of requested values, then list of
+      values</td>
+    </tr>
+    <tr>
+      <td>Default:</td>
+      <td>Print all values</td>
+    </tr>
+    <tr>
+      <td>-# &lt;count&gt;</td>
+      <td>Print first &lt;count&gt; elements of an array</td>
+    </tr>
+    <tr>
+      <td>-S</td>
+      <td>Print array of char as a string (long string)</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Floating point type format:</strong></td>
+    </tr>
+    <tr>
+      <td>Default:</td>
+      <td>Use %g format</td>
+    </tr>
+    <tr>
+      <td>-e &lt;nr&gt;</td>
+      <td>Use %e format, with a precision of &lt;nr&gt; digits</td>
+    </tr>
+    <tr>
+      <td>-f &lt;nr&gt;</td>
+      <td>Use %f format, with a precision of &lt;nr&gt; digits</td>
+    </tr>
+    <tr>
+      <td>-g &lt;nr&gt;</td>
+      <td>Use %g format, with a precision of &lt;nr&gt; digits</td>
+    </tr>
+    <tr>
+      <td>-s</td>
+      <td>Get value as string (honors server-side precision)</td>
+    </tr>
+    <tr>
+      <td>-lx</td>
+      <td>Round to long integer and print as hex number</td>
+    </tr>
+    <tr>
+      <td>-lo</td>
+      <td>Round to long integer and print as octal number</td>
+    </tr>
+    <tr>
+      <td>-lb</td>
+      <td>Round to long integer and print as binary number</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Integer number format:</strong></td>
+    </tr>
+    <tr>
+      <td>Default:</td>
+      <td>Print as decimal number</td>
+    </tr>
+    <tr>
+      <td>-0x</td>
+      <td>Print as hex number</td>
+    </tr>
+    <tr>
+      <td>-0o</td>
+      <td>Print as octal number</td>
+    </tr>
+    <tr>
+      <td>-0b</td>
+      <td>Print as binary number</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Alternate output field separator:</strong></td>
+    </tr>
+    <tr>
+      <td>-F &lt;ofs&gt;</td>
+      <td>Use &lt;ofs&gt; as an alternate output field separator</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3><a name="camonitor">camonitor</a></h3>
+<pre>camonitor [options] &lt;PV name&gt; ...</pre>
+
+<h4>Description</h4>
+
+<p>Subscribe to and print value updates for PV(s).</p>
+
+<table border="1">
+  <caption></caption>
+  <thead>
+    <tr>
+      <th>Option</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>-h</td>
+      <td>Print usage information</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>CA options:</strong></td>
+    </tr>
+    <tr>
+      <td>-w &lt;sec&gt;</td>
+      <td>Wait time, specifies longer CA timeout, default is 1.0 second</td>
+    </tr>
+    <tr>
+      <td>-m &lt;msk&gt;</td>
+      <td>Specify CA event mask to use. &lt;msk&gt; is any combination of<br>
+        'v' (value), 'a' (alarm), 'l' (log/archive), 'p' (property).<br>
+        Default event mask is 'va'</td>
+    </tr>
+    <tr>
+      <td>-p &lt;prio&gt;</td>
+      <td>CA priority (0-99, default 0=lowest)</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Timestamps:</strong></td>
+    </tr>
+    <tr>
+      <td>Default:</td>
+      <td>Print absolute timestamps (as reported by CA server)</td>
+    </tr>
+    <tr>
+      <td>-t &lt;key&gt;</td>
+      <td>Specify timestamp source(s) and type, with &lt;key&gt; containing<br>
+        's' = CA server (remote) timestamps<br>
+        'c' = CA client (local) timestamps (shown in '()'s)<br>
+        'n' = no timestamps<br>
+        'r' = relative timestamps (time elapsed since start of program)<br>
+        'i' = incremental timestamps (time elapsed since last update)<br>
+        'I' = incremental timestamps (time since last update, by channel)<br>
+        'r', 'i' or 'I' require 's' or 'c' to select the time source</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Enum Format:</strong></td>
+    </tr>
+    <tr>
+      <td>-n</td>
+      <td>Print DBF_ENUM values as number (default is enum string)</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Arrays:</strong></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>Array values: Print number of elements, then list of values</td>
+    </tr>
+    <tr>
+      <td>Default:</td>
+      <td>Default:  Request and print all elements (dynamic arrays supported)</td>
+    </tr>
+    <tr>
+      <td>-# &lt;num&gt;</td>
+      <td>Request and print up to &lt;num&gt; elements</td>
+    </tr>
+    <tr>
+      <td>-S</td>
+      <td>Print array of char as a string (long string)</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Floating point format:</strong></td>
+    </tr>
+    <tr>
+      <td>Default:</td>
+      <td>Use %g format</td>
+    </tr>
+    <tr>
+      <td>-e &lt;num&gt;</td>
+      <td>Use %e format, with a precision of &lt;num&gt; digits</td>
+    </tr>
+    <tr>
+      <td>-f &lt;num&gt;</td>
+      <td>Use %f format, with a precision of &lt;num&gt; digits</td>
+    </tr>
+    <tr>
+      <td>-g &lt;num&gt;</td>
+      <td>Use %g format, with a precision of &lt;num&gt; digits</td>
+    </tr>
+    <tr>
+      <td>-s</td>
+      <td>Get value as string (honors server-side precision)</td>
+    </tr>
+    <tr>
+      <td>-lx</td>
+      <td>Round to long integer and print as hex number</td>
+    </tr>
+    <tr>
+      <td>-lo</td>
+      <td>Round to long integer and print as octal number</td>
+    </tr>
+    <tr>
+      <td>-lb</td>
+      <td>Round to long integer and print as binary number</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Integer number format:</strong></td>
+    </tr>
+    <tr>
+      <td>Default:</td>
+      <td>Print as decimal number</td>
+    </tr>
+    <tr>
+      <td>-0x</td>
+      <td>Print as hex number</td>
+    </tr>
+    <tr>
+      <td>-0o</td>
+      <td>Print as octal number</td>
+    </tr>
+    <tr>
+      <td>-0b</td>
+      <td>Print as binary number</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3><a name="caput">caput</a></h3>
+<pre>caput [options] &lt;PV name&gt; &lt;value&gt; ...
+caput -a [options] &lt;PV name&gt; &lt;no of elements&gt; &lt;value&gt; ...</pre>
+
+<h4>Description</h4>
+
+<p>Put value to a PV.</p>
+
+<p>The specified value is written to the PV (as a string). The PV's value is
+read before and after the write operation and printed as "Old" and "New" values
+on stdout.</p>
+
+<p>There are two variants to the arguments for this command. For the scalar
+variant without the <code>-a</code> flag, all the value arguments provided after
+the PV name are concatenated with a single space character between them, and the
+resulting string (up to 40 characters long unless the <code>-S</code> flag is
+given) is written to the specified PV.</p>
+
+<p>The array variant with the <code>-a</code> flag writes an array of string
+values to the specified PV. The numeric argument giving the number of array
+elements is actually ignored, the array length to be written is actually
+controlled by the number of values provided on the command line.</p>
+
+<table border="1">
+  <caption></caption>
+  <thead>
+    <tr>
+      <th>Option</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>-h</td>
+      <td>Print usage information</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>CA options:</strong></td>
+    </tr>
+    <tr>
+      <td>-w &lt;sec&gt;</td>
+      <td>Wait time, specifies longer CA timeout, default is 1.0 second</td>
+    </tr>
+    <tr>
+      <td>-c</td>
+      <td>Asynchronous put (use ca_put_callback and wait for completion)</td>
+    </tr>
+    <tr>
+      <td>-p &lt;prio&gt;</td>
+      <td>CA priority (0-99, default 0=lowest)</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Format options:</strong></td>
+    </tr>
+    <tr>
+      <td>-t</td>
+      <td>Terse mode - print only successfully written value, without name</td>
+    </tr>
+    <tr>
+      <td>-l</td>
+      <td>Long mode "name timestamp value stat sevr" (read PVs as DBR_TIME_xxx)</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Enum Format:</strong></td>
+    </tr>
+    <tr>
+      <td>Default:</td>
+      <td>Auto - try value as ENUM string, then as index number</td>
+    </tr>
+    <tr>
+      <td>-n</td>
+      <td>Force interpretation of values as numbers</td>
+    </tr>
+    <tr>
+      <td>-s</td>
+      <td>Force interpretation of values as strings</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><strong>Arrays:</strong></td>
+    </tr>
+    <tr>
+      <td>Default:</td>
+      <td>Put scalar</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>Value format: all value arguments concatenated with spaces</td>
+    </tr>
+    <tr>
+      <td>-S</td>
+      <td>Put string as an array of chars (long string)</td>
+    </tr>
+    <tr>
+      <td>-a</td>
+      <td>Put array</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>Value format: number of values, then list of values</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3><a name="cainfo">cainfo</a></h3>
+<pre>cainfo [options] &lt;PV name&gt; ...</pre>
+
+<h4>Description</h4>
+
+<p>Get and print channel and connection information for PV(s).</p>
+
+<p>All available Channel Access related information about PV(s) is printed to
+stdout.</p>
+
+<p>The -s option allows to specify an interest level for calling Channel
+Access' internal report function <code>ca_client_status()</code>, that prints lots of
+internal informations on stdout, including environment settings, used CA ports
+etc.</p>
+
+<table border="1">
+</body>
+
+</html>

@@ -1,0 +1,87 @@
+<!--
+   EPICS first streamDevice application.html
+   
+   Copyright 2019 ihep <ihep@IHEP-HP>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+   
+   
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN">
+
+<head>
+	<title>创建第一个使用 streamDevice 进行串口通讯的应用</title>
+	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+	<meta name="generator" content="Geany 1.33" />
+</head>
+
+<body>
+	<h1>创建使用 streamDevice 进行串口通信的应用</h1>
+	
+	
+	<p>
+		首先，创建一个新文件夹，并创建一个 ioc 应用。（此处创建 example 应用）<br />
+	<code>mkdir TEST<br />cd TEST<br />${base}/bin/${EPICS_HOST_ARCH}/makeBaseApp.pl -t example TEST<br />${base}/bin/${EPICS_HOST_ARCH}/makeBaseApp.pl -i -t example TEST</code>
+	</p>
+	
+	<p>
+		然后，在创建的应用中添加 asyn 和 streamDevice 模块。修改 TESTApp/src/Makefile 文件，添加以下代码<br />
+	<code>TEST_DBD += stream.dbd<br />TEST_DBD += asyn.dbd<br />TEST_DBD += drvAsynSerialPort.dbd<br />
+	TEST_LIBS += stream asyn</code><br />
+	修改 configure/RELEASE 文件，添加模块的安装位置<br />
+	<code>ASYN=&lt;PATH_TO_ASYN&gt;<br />STREAM=&lt;PATH_TO_STREAMDEVICE&gt;</code>
+	</p>
+	
+	<p>
+		修改成功后，可以编译应用<br /><code>make</code><br />
+	若编译成功，则可以启动应用。<br />
+	<code>cd ${TOP}/iocBoot/iocTEST<br />../../bin/${EPICS_ARCH_HOST}/TEST st.cmd</code><br />
+	使用 streamDevice 模块，需要引用 protocol 文件，因此需要在 envPaths 内设置 protocol 文件路径。具体而言需要修改 iocBoot/iocTEST/envPaths 或 直接修改 iocBoot/iocTEST/st.cmd，添加代码<br />
+	<code>epicsEnvSet ("STREAM_PROTOCOL_PATH", "&lt;PATH_TO_YOUR_PROTOCOL_FILES&gt;")</code><br />
+	protocol 文件路径使用 ${TOP} 的相对路径，而非绝对路径。
+	</p>
+	
+	<p>
+		之后根据工程需求创建/修改 database 文件，编辑所需 record。例如 *.db 文件里定义 PV test 如下：<br />
+		<code>record (stringout, "reboot")<br />{<br />    field(DESC, "Reboot the device")<br />    field(DTYP, "stream")<br />    field(OUT, "@test.proto Reboot <strong>PS</strong>"<br />    field(SCAN, "Passive")<br />}</code><br />
+		然后在 test.proto 文件内定义 Test 函数如下：<br />
+		<code>Reboot {<br />    out "RA";<br />}</code><br />
+		此外还有一些全局变量 Terminator 等。<br />
+		若在 ${TOP}/TestApp/Db 内创建新的 db 与 proto 文件，需要在 ${TOP}/TestApp/Db/Makefile 文件中定义两种文件的安装位置<br />
+		<code>DB += test.db<br />DB += test.proto</code>
+	</p>
+	
+	<p>最后，在启动脚本 st.cmd 内配置 Asyn Driver。Asyn 是一个可以通过串口或以太网进行底层通信的驱动。使用串口为例，则配置代码为：<br />
+	<code>drvAsynSerialPortConfigure("PS","/dev/ttyS0")<br />
+		  asynSetOption ("PS", 0, "baud", "9600")<br />
+		  asynSetOption ("PS", 0, "bits", "8")<br />
+		  asynSetOption ("PS", 0, "parity", "none")<br />
+		  asynSetOption ("PS", 0, "stop", "1")<br />
+		  asynSetOption ("PS", 0, "clocal", "N")<br />
+		  asynSetOption ("PS", 0, "crtscts", "N")</code><br />
+	PS 是定义的串口 /dev/ttyS0 的名称，同 *.db 文件内的 PS 相同。
+	</p>
+	
+	<p>编译成功后，启动 ioc。每次对 reboot 变量进行 caput 操作时，串口 /dev/ttyS0 (PS) 便会输出 “RA”。</p>
+	
+	<h2>参考内容</h2>
+	<p><a href="https://panda-wiki.gsi.de/foswiki/bin/view/DCS/EPICSstartUsingStreamDev">Getting started with EPICS using StreamDevice</a></p>
+</body>
+
+</html>

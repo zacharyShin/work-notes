@@ -1,0 +1,56 @@
+<!--
+   EPICS xxx usage.html
+   
+   Copyright 2019 ihep <ihep@IHEP-HP>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+   
+   
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN">
+
+<head>
+	<title>xxx 模块使用</title>
+	<meta http-equiv="content-type" content="text/html;charset=ytf-8" />
+	<meta name="generator" content="Geany 1.33" />
+</head>
+
+<body>
+	<h1>使用 xxx 模块测试 synApps</h1>
+	<p>synApps 模块无错误编译后，可以使用 xxx 模块作为示例或模板构建一个用户目录以支持IOC。</p>
+	
+	<h2>1. 复制 xxx 模块</h2>
+	<p>清理并卸载 xxx 模块，打包复制到目标位置。（以 1w1a 为例）</p>
+	<p><code>cd $(SYNAPPS)<br />mkdir ioc/<br />cd ioc/<br />mkdir 1w1a/</code></p>
+	<p><code>cd $(SYNAPPS)/support/xxx<br />make clean uninstall<br />tar cvf ../xxx.tar *</code></p>
+	<p><code>tar -xf $(SYNAPPS)/support/xxx.tar<br />$(SYNAPPS)/support/util/changePrefix xxx 1w1a</code></p>
+	<p>changePrefix 是 synApps 提供的修改前缀的工具。</p>
+	
+	<h2>2. 修改 st.Linux.&lt;arch&gt; 以及相关的 iocsh 文件。</h2>
+	
+	<h2>3. make</h2>
+	
+	<h2>4. 运行</h2>
+	<code>cd iocBoot/ioc1w1a/<br />../../bin/linux-x86_64/1w1a st.cmd.Linux</code>
+	
+	<h2>参考文献</h2>
+		<p>synApps 5.8: <a href="https://epics.anl.gov/bcda/synApps/synApps.html">synApps Doc: How to build synApps - 3. Building and configuring a user directory</a></p>
+</body>
+
+</html>
