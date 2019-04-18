@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+   linux 恢复yum.html
+   
+   Copyright 2019 ihep <ihep@IHEP-HP>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+   
+   
+-->
+
+<head>
+<meta charset="utf-8" />
+<title>CentOS7 恢复 yum/python</title>
+<meta name="generator" content="Geany 1.33" />
+</head>
+
+<body>
+
+<h1>CentOS7 恢复 yum/python</h1>
+<p>
+	CentOS7 yum 工具依赖 Python2.7。若失误卸载了 Python2.7，将有可能造成无法使用 yum 工具的错误。需要先修复/安装 Python2.7，再修复/安装 yum工具。
+	所需 rpm 包需要根据 CentOS 具体版本以及运行平台下载。下述下载地址为 CentOS 7.0.1406，x86_64平台 rpm 包下载链接。
+</p>
+
+<h2>1. 卸载 python</h2>
+<p>
+	<code>rpm -qa|grep python|xargs rpm -e --allmatches --nodeps</code><br /><code>whereis python|xargs rm -fr</code><br />
+	<code>whereis python</code>  # 验证是否完全删除 python，无返回结果则说明成功
+</p>
+
+<h2>2. 恢复 python</h2>
+下载路径一般选在 /usr/local/src。<br />
+<h3>2.1 下载 python 及相关库</h3>
+<p>
+	下载 python，python-devel，python-iniparse，python-libs，python-pycurl，python-urlgraurlgrabber，rpm-python rpm包<br />
+	<code>wget http://vault.centos.org/7.0.1406/os/x86_64/Packages/python-2.7.5-16.el7.x86_64.rpm</code><br />
+	<code>wget http://vault.centos.org/7.0.1406/os/x86_64/Packages/python-devel-2.7.5-16.el7.x86_64.rpm</code><br />
+	<code>wget http://vault.centos.org/7.0.1406/os/x86_64/Packages/python-iniparse-0.4-9.el7.noarch.rpm</code><br />
+	<code>wget http://vault.centos.org/7.0.1406/os/x86_64/Packages/python-libs-2.7.5-16.el7.x86_64.rpm</code><br />
+	<code>wget http://vault.centos.org/7.0.1406/os/x86_64/Packages/python-pycurl-7.19.0-17.el7.x86_64.rpm</code><br />
+	<code>wget http://vault.centos.org/7.0.1406/os/x86_64/Packages/python-urlgrabber-3.10-4.el7.noarch.rpm</code><br />
+	<code>wget http://vault.centos.org/7.0.1406/os/x86_64/Packages/rpm-python-4.11.1-16.el7.x86_64.rpm</code>
+</p>
+<h3>2.2 安装 rpm 包</h3>
+<p>
+	<code>rpm -ivh python-*</code><br />
+	<code>rpm -ivh rpm-python-4.11.1-16.el7.x86_64.rpm</code><br />
+</p>
+<h3>2.3 恢复 setuptools</h3>
+<p>
+	<code>wget --no-check-certificate https://files.pythonhosted.org/packages/ed/69/c805067de1feedbb98c53174b0f2df44cc05e0e9ee73bb85eebc59e508c6/setuptools-41.0.0.zip</code><br />
+	<code>tar -zxvf setuptools-41.0.0.zip</code><br />
+	<code>cd setuptools-41.0.0/</code><br />
+	<code>python setup.py build</code><br />
+	<code>python setup.py install</code>
+</p>
+<h3>2.4 恢复 pip</h3>
+<p>
+	<code>wget --no-check-certificate https://files.pythonhosted.org/packages/36/fa/51ca4d57392e2f69397cd6e5af23da2a8d37884a605f9e3f2d3bfdc48397/pip-19.0.3.tar.gz</code><br />
+	<code>tar -vxzf pip-19.0.3.tar.gz</code><br />
+	<code>cd pip-19.0.3/</code><br/>
+	<code>python setup.py install</code><br />
+	<code>ln -s /usr/local/python27/bin/pip /usr/bin/pip</code>
+</p>
+
+<h2>3. 恢复 yum</h2>
+<p>
+	下载 yum，yum-metadata-parser，yum-plugin-fastestmirror 包并安装。<br />
+	<code>wget http://vault.centos.org/7.0.1406/os/x86_64/Packages/yum-3.4.3-118.el7.centos.noarch.rpm</code><br />
+	<code>wget http://vault.centos.org/7.0.1406/os/x86_64/Packages/yum-metadata-parser-1.1.4-10.el7.x86_64.rpm</code><br />
+	<code>wget http://vault.centos.org/7.0.1406/os/x86_64/Packages/yum-plugin-fastestmirror-1.1.31-24.el7.noarch.rpm</code><br />
+	<code>rpm -ivh yum-*</code>
+</p>
+
+</body>
+
+</html>

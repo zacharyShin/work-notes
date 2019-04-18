@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+   Linux 挂载远程目录.html
+   
+   Copyright 2019 ihep <ihep@IHEP-HP>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+   
+   
+-->
+
+<head>
+<meta charset="utf-8" />
+<title>Linux 挂载远程目录</title>
+<meta name="generator" content="Geany 1.33" />
+</head>
+
+<body>
+<h1>Linux 挂载远程目录</h1>
+
+<h2>配置 NFS 服务并远程挂载</h2>
+<p>NFS 是网络文件系统，允许一个节点通过网络访问远程计算机的文件系统，远程文件系统可以被直接挂载到本地，文件操作与本地没有区别，局域网的 NFS 的IO 性能也可以保证。</p>
+<h3>1. 服务端配置</h3>
+<p>
+	服务端提供文件系统供客户端挂载使用。<br />
+	首先检查基础环境<br />
+	<code>rpm -qa | grep nfs-utils</code><br />
+	<code>rpm -qa | grep rpcbind</code><br />
+	若这两个包存在则可以直接使用，若没有需要安装。<br />
+	安装之后配置 NFS 访问目录。编辑文件 /etc/exports。
+	<code>/nfs_test 192.168.1.8(rw, no_root_squash, no_all_squash, async)</code><br />
+	这个配置表示开放本地存储目录 /nfs_test，只允许主机 192.168.1.8 访问。<br />
+	其他参数：<br />
+	<table border=“1”>
+		<tr>
+			<td>rw</td>
+			<td>可读写的权限</td>
+		</tr>
+		<tr>
+			<td>ro</td>
+			<td>只读的权限</td>
+		</tr>
+		<tr>
+			<td>all_squash</td>
+			<td>无论登入 NFS 主机的使用者身份是谁，他的身份都会被压缩为匿名使用者。通常是 nobody</td>
+		</tr>
+		<tr>
+			<td>no_root_squash</td>
+			<td>登入 NFS 主机使用分享目录的使用者如果是 root，那么他对这个目录具有 root 权限。*极不安全，不建议使用</td>
+		</tr>
+		<tr>
+			<td>root_squash</td>
+			<td>登入 NFS 主机使用分享目录的使用者如果是 root，那么这个使用者的权限将被压缩成为匿名使用者。通常是 nobody</td>
+		</tr>
+		<tr>
+			<td>sync</td>
+			<td>资料同步写入到内存与硬盘当中</td>
+		</tr>
+		<tr>
+			<td>async</td>
+			<td>资料会暂存于内存，而非直接写入硬盘</td>
+		</tr>
+		<tr>
+			<td>insecure</td>
+			<td>允许客户端的非授权访问</td>
+		</tr>
+		<tr>
+			<td>anonguid</td>
+			<td>自行设置分享用户的使用者身份的 UID 值，这个 UID 需要存在于 /etc/passwd 中</td>
+		</tr>
+		<tr>
+			<td>anongid</td>
+			<td>自行设置分享用户的使用者身份的 GID 值，这个 GID 需要存在于 /etc/group 中</td>
+		</tr>
+	</table>
+	
+	完成配置后启动相关服务<br />
+	<code>systemctl start rpcbind.service</code><br />
+	<code>systemctl start nfs.service</code><br />
+	启动后可以通过 status 查看状态。修改配置后，可以重启服务使配置生效，也可以执行命令刷新命令<br />
+	<code>exportfs -a</code>
+</p>
+<h3>2. 客户端设置</h3>
+<p>
+	同样需要保证 nfs-utils 和 rpcbind 服务启动。<br />
+	然后创建挂载点：<br />
+	<code>mkdir /mnt/test1</code><br />
+	挂载 nfs：<br />
+	<code>mount -t nfs 192.168.1.3:/nfs_test /mnt/test1</code><br />
+	挂载之后可以通过 <code>df -h</code> 查看挂载情况。<br />
+	卸载 NFS 和普通文件系统一样<br />
+	<code>umount /mnt/test1</code><br />
+	若需要设置开机挂载，则需要在 /etc/fstab 添加配置 <code>192.168.1.3:/nfs_test /mnt/test1 rw,tcp,intr 0 1</code> 
+	服务端和客户端也都需要 enable 设置 nfs 和 rpcbind 服务开机启动。
+</p>
+
+<h2>参考</h2>
+<a href="http://www.360doc.com/content/14/0527/00/17617523_381280598.shtml">NFS 参数说明</a><br />
+<a href="https://www.cnblogs.com/freeweb/p/6593861.html">Linux 下配置 nfs 并远程挂载</a>
+</body>
+
+</html>
