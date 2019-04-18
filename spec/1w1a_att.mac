@@ -1,0 +1,124 @@
+"""
+DESCRIPTION
+
+AUTHOR
+
+CREATION DATE
+
+    2019-04-15 @ BSRF 1W1A
+
+COPYRIGHT
+
+VERSION
+
+DEPENDENCIES
+
+    None
+
+CHANGE LOG
+
+    2019-04-15
+    
+    - first version
+    
+    TODO list:
+    - att_help
+    - global variable
+    - att_setup
+"""
+
+#================================================================
+# Global variable definitions
+#================================================================
+
+#================================================================
+# Macro command definitions
+#================================================================
+
+#----------------------------------------------------------------
+def flt '
+        """
+        Put in filters according to <mask>
+        
+        Usage::
+        
+           > flt <mask>
+           
+        """
+        
+        local i, mask, pv_name_default, pv_name
+
+        if ($# != 1) {
+                print "Usage: filter mask"
+                exit
+        }
+
+        mask = $1
+        mask = int(mask)
+
+        if (mask < 0 || mask > 15) {
+                print "Error: Invalid filter number"
+                exit
+        }
+        
+        pv_name_default = "1w1a:InsertFil"
+        for (i = 0; i < 4; i++) {
+                pv_name = sprintf("%s%d", pv_name_default, (i+1))
+                epics_put(pv_name, "Insert")
+        }
+
+        pv_name_default = "1w1a:RemoveFil"
+        for(i = 0; i < 4 ; i++) {
+                if (!(mask & pow(2, i))) {
+                pv_name = sprintf("%s%d", pv_name_default, (i+1))
+                epics_put(pv_name, "Remove")
+                }
+        }
+
+'
+
+def flt_pos '
+        """
+        Print current filter status.
+        
+        Usage::
+        
+           > flt_pos
+           
+        """
+        
+        local pv_name, fil_pos
+              pv_name = "1w1a:InqFilPos"
+              
+        fil_pos = epics_get(pv_name)
+        
+        print("att: %s", fil_pos)
+'
+
+def att '
+        """
+        Print current filter status, or put in filters according 
+        to <mask>.
+        
+        Usage::
+        
+           > att <mask>
+           > att
+           
+        Arguments:
+           :mask: The binary mask specifying which filters wil be 
+           inserted.
+           
+        """
+        if ($# == 0) {
+              flt_pos
+        }
+        else if ($# == 1) {
+              flt $1
+        }
+        else {
+              print("Error: Invalid arguments")
+              print("Usage: att mask")
+              print("Usage: att")
+        }
+'
