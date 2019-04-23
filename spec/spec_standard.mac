@@ -1,0 +1,61 @@
+def mv '_mmov 0x00 $*'
+
+def umv '_mmov 0x02 $*'
+
+def _mmov '{
+	local _i, _j, _n, _tmp[], _mot[], _pos[], _mlist, _flags, _args, _w
+
+	# 第一个参数 _flags，0x00 表示命令 mv，0x02 表示命令 _umv
+	# 判断 _flags 是否合法
+	if (!((_flags = $1) in _mmov_cmd)) {
+		eprint "Bad flags value for _mmov"
+		exit
+	}
+
+	# 分割参数，放入 _args
+	_args = "$*"
+	_n = split(substr(_args, index(_args, " ") + 1), _tmp)
+
+	# 参数 _tmp 合法性检查，需要是偶数（0，2，...）
+	# 参数需要配对，例如 th 1 tth 2
+	if (_n == 0 || _n%2) {
+		local pre
+
+		if (_flags&0x01)
+			pre = "relative-"
+		else if (_flags&04)
+			pre = "dial-"
+		eprintf("Usage:  %s motor %sposition [[motor %sposition] ...]\n", _mmov_cmd[_flags], pre, pre)
+		exit
+	}
+
+	# 参数中关于 motor 的参数合法性检查
+	# motor_num(mne) 依据助记名返回 motor 号，返回 -1 表示无此 motor
+	for (_i = _j = 0; _i < _n; _i += 2, _j++) {
+		if ((_mot[_j] = motor_num(_tmp[_i])) < 0) {
+			eprintf("%s: Invalid motor: \"%s\"\n", _mmov_cmd[_flags], _tmp[_i])
+			exit
+		}
+		_pos[_j] = eval(_tmp[_i+1], "reset, local")
+	}
+	waitmove
+	get_angles
+	for (_i = 0, _mlist = ""; _i < _j; _i++) {
+		if (_flags&0x04)         # dial
+			A[_mot[_i]] = user(_mot[_i], _pos[_i])
+		else if (_flags&0x08)    # relative with commanded
+			A[_mot[_i]] = read_motors(0x10, _mot[_i]) + _pos[_i]
+		else if (_flags&0x01)    # relative
+			A[_mot[_i]] += _pos[_i]
+		else                    # ordinary
+			A[_mot[_i]] = _pos[_i]
+		if (_flags&0x02)
+			_mlist = _mlist " " _mot[_i]
+	}
+	move_em
+	if (_flags&0x02)
+		_update(_mlist)
+	else {
+		move_poll
+	}
+}'
