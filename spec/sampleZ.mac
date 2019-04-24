@@ -1,18 +1,22 @@
 global sampleZ_MAX_COUNT
-       sampleZ_MAX_COUNT=7358
+#       sampleZ_MAX_COUNT=7358
        
 global sampleZ_COUNT
-       sampleZ_COUNT=7358
+#       sampleZ_COUNT=7358
        
 global sampleZ_PRS_COUNT
-       sampleZ_PRS_COUNT=7034
+#       sampleZ_PRS_COUNT=7034
        
 global sampleZ_PRECISION
        sampleZ_PRECISION=2
 
 global sampleZ_STEP
+       sampleZ_STEP=0.1
 global sampleZ_STEP_MASK
        sampleZ_STEP_MASK=0
+       
+global sampleZ_mne
+       sampleZ_mne = "zz"
 
 
 def _sampleZ_count_isHalf() '{
@@ -25,21 +29,21 @@ def _sampleZ_count_isHalf() '{
         max_count_bit = 1 + int(log10(max_count))
         half_count_bit = 1 + int(log10(half_count))
 
-		"""
+	
         print(sprintf("max_count is %d", max_count))
         print(sprintf("max_count_bit is %d", max_count_bit))
         print(sprintf("half_count is %d", half_count))
         print(sprintf("half_count_bit is %d", half_count_bit))
-		"""
+	
 
         j = half_count_bit - 2
         lo_lmt = int(half_count/exp10(j))*exp10(j)
         hi_lmt = lo_lmt + exp10(j)
 
-		"""
+	
         print(sprintf("lo_lmt is %d", lo_lmt))
         print(sprintf("hi_lmt is %d", hi_lmt))
-        """
+        
 
         if (sampleZ_COUNT < lo_lmt) {
                 rtn = -1
@@ -52,14 +56,11 @@ def _sampleZ_count_isHalf() '{
 }'
 
 def _sampleZ_ct '
-        waitmove
-        count_em
-        waitcount
+        ct 0.1
         
         sampleZ_PRS_COUNT=sampleZ_COUNT
         
-        # 设置 sampleZ_COUNT 是哪个 counter
-        sampleZ_COUNT=S[2]
+        sampleZ_COUNT=S[2]*10
         
         if (sampleZ_COUNT > sampleZ_MAX_COUNT) {
                sampleZ_MAX_COUNT=sampleZ_COUNT
@@ -69,28 +70,57 @@ def _sampleZ_ct '
 def _sampleZ_mvdown '
         local _step
         _step = 0 - sampleZ_STEP
-        umv zz _step
+        umvr sampleZ_mne _step
+        waitmove
 '
 
 def _sampleZ_mvup '
         local _step
         _step = sampleZ_STEP
-        umv zz _step
+        umvr sampleZ_mne _step
+        waitmove
 '
 
 def _sampleZ_count_isEqual() '{
        local prs_count, prt_count, count_bit, ct_precision
        
        prs_count = sampleZ_PRS_COUNT
+#       print(prs_count)
        prt_count = sampleZ_COUNT
+ #      print(prt_count)
        ct_precision = sampleZ_PRECISION
+#       print(ct_precision)
        
        count_bit = 1 + int(log10(prt_count))
+ #      print(count_bit)
+ #      print("\n")
        
        prs_count = int(prs_count/exp10(count_bit-2))*exp10(count_bit-2)
        prt_count = int(prt_count/exp10(count_bit-2))*exp10(count_bit-2)
+       print(prs_count)
+       print(prt_count)
        
        if (fabs(prs_count-prt_count) <= sampleZ_PRECISION * exp10(count_bit-2)) {
+              print("equal")
+              rtn = 1
+       } else {
+              print("not equal")
+              rtn = 0
+       }
+       
+       return rtn
+}'
+
+def _sampleZ_count_isZero() '{
+        local count_bit, ct_precision, prt_count
+        
+        prt_count = sampleZ_COUNT
+        ct_precision = sampleZ_PRECISION
+        count_bit = 1 + int(log10(prt_count))
+        
+        prt_count = int(prt_count/exp10(ct_precision))*exp10(ct_precision)
+        
+        if (prt_count == 0) {
               rtn = 1
        } else {
               rtn = 0
@@ -113,63 +143,73 @@ def _sampleZ_adjust_step '
                      sampleZ_STEP_MASK-=1
               }
        } else if (_flags&0x04) {
-              if (sampleZ_STEP_MASK < 5) {
+              if (sampleZ_STEP_MASK < 4) {
                      sampleZ_STEP_MASK+=1
               }
        }
-       sampleZ_STEP=_sampleZ_mv_dict[sampleZ_STEP_MASK]
+       sampleZ_STEP = _sampleZ_mv_dict[sampleZ_STEP_MASK]
 '
 
-"""
+
 def sampleZ_assign '
        local loop_time
        local tmp
 
-       # 这个循环后有光露出来，但是不知道是否所有光都露出来
-       _sampleZ_adjust_step 0x01
+       #_sampleZ_adjust_step 0x01
+       
+       if(yesno("Loop 1?", 1)) {
 	   while(1) {
+	      p "count"
               _sampleZ_ct
-              if ( sampleZ_COUNT == 0) {
+              if ( _sampleZ_count_isZero() ) {
                      _sampleZ_mvdown; continue;
               }
               else {
                      break;
               }
 	   }
-	   
-	   # 这个循环后，所有光露出来，还要记录最大光强
+	} else {
+	   exit
+	}
+	
+	if (yesno("Loop 2?", 1)) {
 	   while(1) {
-	          # TODO：重新设置 mv 步长
-	          # _sampleZ_adjust_step 
+	          _sampleZ_adjust_step 0x02
 	          _sampleZ_mvdown
 	          _sampleZ_ct
-	          if ( _sampleZ_count_ifEqual()) {
-	                 break
+	          if ( _sampleZ_count_isEqual()) {
+	                 break;
 	          }
 	          else {
-	                 continue
+	                 continue;
 	          }
 	   }
-	   
-	   # 向上 mv，成功则结束，否则继续移动
+	 } else {
+	   exit
+	 }
+
+	 if(yesno("Loop 3?", 1)) {
 	   while (1) {
-	          sampleZ_mvup
-	          sampleZ_count
+	          _sampleZ_mvup
+	          _sampleZ_ct
 	          tmp = _sampleZ_count_isHalf()
+#	          print(tmp)
+#	          wm sampleZ_mne
 	          if (tmp == 0) {
 	                 break
-	          } else if (tmp < 0) {
+	          } else if (tmp > 0) {
 	                 _sampleZ_adjust_step 0x04
 	                 continue
 	          } else {
-	                 # 首先回退到原位置
-	                 sampleZ_mvdown
-	                 # TODO：重新设置 mv 步长
+	                 _sampleZ_mvdown
 	                 continue
 	          } 
 	   }
+	   } else {
+	       exit
+	   }
 '
-
+"""
 def sampleZ_config '
 '
 """
