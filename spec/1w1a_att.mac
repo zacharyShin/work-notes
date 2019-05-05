@@ -1,3 +1,4 @@
+ 
 """
 DESCRIPTION
 
@@ -64,14 +65,18 @@ def flt '
         pv_name_default = "1w1a:InsertFil"
         for (i = 0; i < 4; i++) {
                 pv_name = sprintf("%s%d", pv_name_default, (i+1))
+                print(pv_name)
                 epics_put(pv_name, "Insert")
+                sleep(0.5)
         }
 
         pv_name_default = "1w1a:RemoveFil"
         for(i = 0; i < 4 ; i++) {
                 if (!(mask & pow(2, i))) {
                 pv_name = sprintf("%s%d", pv_name_default, (i+1))
+                print(pv_name)
                 epics_put(pv_name, "Remove")
+                sleep(0.5)
                 }
         }
 
@@ -90,9 +95,11 @@ def flt_pos '
         local pv_name, fil_pos
               pv_name = "1w1a:InqFilPos"
               
+        epics_put(pv_name, 0)
+        sleep(0.5)
         fil_pos = epics_get(pv_name)
         
-        print("att: %s", fil_pos)
+        printf("att: %d", fil_pos)
 '
 
 def att '
