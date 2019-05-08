@@ -20,12 +20,22 @@ CHANGE LOG
 
     2019-04-15
     
-    - first version
+    - first version, using Ligang's EPICS driver which insert/
+    remove only one filter each time
     
     TODO list:
     - att_help
     - global variable
     - att_setup
+
+    2019-05-05
+
+    -add macro "flt_fast"
+    -add debug information variable ATT_DEBUG
+
+    2019-05-07
+
+    
 """
 
 #================================================================
@@ -43,6 +53,17 @@ global ATT_DEBUG
 def flt '
         """
         Put in filters according to <mask>
+
+        It will first insert all four filters, then remove the 
+        unwanted filter.
+
+        The text commands via serial port should be sent with a 
+        interval not less than 0.4 seconds(by experiment) to 
+        avoid command loss.
+        ##This sleep time can be set by a global variable
+
+        This macro command calls the PFCU EPICS driver "pm16c"
+        developed by Ligang(li75gang@ihep.ac.cn)
         
         Usage::
         
@@ -154,7 +175,31 @@ def att '
 def flt_fast '
 
 		"""
+        Put in filters according to <mask>
 
+        It will inquire the present status of four filters. By 
+        comparing the present status and the tartget status, 
+        the action of each filter will be known.
+
+        If one filter is not supposed to act, no matter insert 
+        or remove, it will stay. And if it is supposed to change
+        its status, it will insert or remove according to its 
+        target status.
+
+        The text commands via serial port should be sent with a 
+        interval not less than 0.4 seconds(by experiment) to 
+        avoid command loss when all 4 filters are required to 
+        move. To make it always succeed, the sleep time is now 
+        set to 0.5 second.
+        ##This sleep time can be set by a global variable
+
+        This macro command calls the PFCU EPICS driver "pm16c"
+        developed by Ligang(li75gang@ihep.ac.cn)
+
+        Usage::
+        
+           > flt_fast <mask>
+           
 		"""
 
 	    local i, j, k, mask, pv_name_in, pv_name_out, pv_name
@@ -211,6 +256,51 @@ def flt_fast '
                 mask = mask >> 1
                 fil_pos = fil_pos >> 1
         }
+
+        _flt_timer2 = time()
+        _flt_time = _flt_timer2 - _flt_timer1
+        printf("Filter action period: %.2f", _flt_time)
+'
+
+def flt_onetime '
+        local i, mask, pv_name_default, pv_name
+        local _flt_timer1, _flt_timer2, _flt_time
+
+        if ($# != 1) {
+                print "Usage: filter mask"
+                exit
+        }
+
+        mask = $1
+        mask = int(mask)
+
+        if (mask < 0 || mask > 15) {
+                print "Error: Invalid filter number"
+                exit
+        }
+        
+        _flt_timer1 = time()
+
+        pv_name_default = "1w1a:testBO"
+        for(i = 4; i > 0; i--) {
+
+        		pv_name = sprintf("%s%d", pv_name_default, i)
+
+                if (mask & pow(2, (i-1)) {
+                	if (ATT_DEBUG)
+	                	printf("%s: Insert", pv_name)
+                	epics_put(pv_name, 1)
+                }
+                else {
+                	if (ATT_DEBUG)
+	                	printf("%s: Remove", pv_name)
+                	epics_put(pv_name, 0)
+                }
+        }
+        sleep(0.1)
+
+        pv_name = "1w1a:callPFCU"
+        epics_put(pv_name, 1)
 
         _flt_timer2 = time()
         _flt_time = _flt_timer2 - _flt_timer1
