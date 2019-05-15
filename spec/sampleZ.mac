@@ -18,6 +18,9 @@ global sampleZ_STEP_MASK
 global sampleZ_mne
        sampleZ_mne = "zz"
 
+global sampleZ_DEBUG
+       sampleZ_DEBUG = 1
+
 
 def _sampleZ_count_isHalf() '{
         local lo_lmt, hi_lmt, max_count, max_count_bit, half_count, half_count_bit
@@ -29,20 +32,22 @@ def _sampleZ_count_isHalf() '{
         max_count_bit = 1 + int(log10(max_count))
         half_count_bit = 1 + int(log10(half_count))
 
-	
-        print(sprintf("max_count is %d", max_count))
-        print(sprintf("max_count_bit is %d", max_count_bit))
-        print(sprintf("half_count is %d", half_count))
-        print(sprintf("half_count_bit is %d", half_count_bit))
+	    if (sampleZ_DEBUG) {
+            print(sprintf("max_count is %d", max_count))
+            print(sprintf("max_count_bit is %d", max_count_bit))
+            print(sprintf("half_count is %d", half_count))
+            print(sprintf("half_count_bit is %d", half_count_bit))
+        }
 	
 
         j = half_count_bit - 2
         lo_lmt = int(half_count/exp10(j))*exp10(j)
         hi_lmt = lo_lmt + exp10(j)
 
-	
-        print(sprintf("lo_lmt is %d", lo_lmt))
-        print(sprintf("hi_lmt is %d", hi_lmt))
+	    if (sampleZ_DEBUG) {
+            print(sprintf("lo_lmt is %d", lo_lmt))
+            print(sprintf("hi_lmt is %d", hi_lmt))
+        }
         
 
         if (sampleZ_COUNT < lo_lmt) {
