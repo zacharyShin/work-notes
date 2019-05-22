@@ -1,0 +1,1616 @@
+"""
+Macros to control a set of filters from SPEC.
+
+DESCRIPTION
+  The filters have to be controlled via binary input channels in EPICS.
+  Any number of filters is supported in principle. In practice, the total
+  number of filters is limited by the time needed to calculate all
+  possible combinations of filter transmissions. Up to 8 filters seems to be
+  no problem at all, for 12 filters the calculations take approximately 1
+  second, with the calculation time increasing approximately with the square
+  of the number of filters.
+  Presently, filter transmissions need to be entered manually after starting
+  up SPEC. This also applies to changes in the incident beam energy, which
+  will change the transmission.
+
+AUTHOR:
+
+  * Christian M. Schlepuetz (CS, cschlep),
+    Argonne National Laboratory, cschlep@aps.anl.gov [1, 2]
+
+AUTHOR'S PREVIOUS FUNDING AFFILIATIONS:
+
+  * [1] Swiss Light Source, Paul Scherrer Institut, Switzerland
+  * [2] Department of Physics, University of Michigan, USA
+
+CREATION DATE:
+
+  2005-07-22 @ Swiss Light Source
+
+COPYRIGHT:
+
+  .. automatically retrieve the current year:
+  .. |current_year| date:: %Y
+
+  Copyright (c) 2010-|current_year| by the above authors (see AUTHOR/AUTHORS).
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see http://www.gnu.org/licenses/.
+
+VERSION::
+
+  $Revision$
+  $Date$
+  $Author$
+  $URL$
+
+DEPENDENCIES:
+
+  None
+
+CHANGE LOG:
+
+  2005-07-22 (CS):
+
+  - modified first version by F. Pfeiffer to comply with naming and
+    formatting conventions at X04SA, SLS.
+  - added filter_get_mask() as a separate macro function.
+
+  ... (more irrelevant changes) ...
+
+  2008-04-15 (CS)
+
+  - modified macro to work with APS Sector 7 filter box (4 filters)
+  - crude and direct way to calculate transmission.
+
+  2010-03-22 (CS):
+
+  - improved version to work at APS Sector 13
+  - variable (configurable) number of filters
+  - sorts filter combinations according to combined transmission
+  - no dynamical transmission calculation for changing energy yet!
+
+  2010-03-31 (CS):
+
+  - added filter_load and filter_save routines to save configuration to file
+    and reload later.
+
+  2010-07-05 (CS):
+
+  - fixed small bug which resulted in an endless loop when typing
+    'filter_trans 1'.
+
+  2010-07-23 (CS):
+
+  - added SVN keywords
+
+  2010-10-15 (CS):
+
+  - added globals FILTER_CONF_FILE and FILTER_CONF_FILE_DEFAULT to facilitate
+    the loading of filter configurations.
+
+  2010-10-2 (CS):
+
+  - cleaned up filter_setup and filter_load routines to work more reliably.
+  - create easy default filename in orientSave routine.
+
+  2011-04-04 (CS):
+
+  - changed all macro names to lower case and underscore naming convention.
+
+  2011-04-08 (CS):
+
+  - fixed small bug in logic when requesting a transmission lower than all
+    filters combined. Such a request was ignored in the past, now it results
+    in  all the filters being put in.
+
+  2011-04-15 (CS):
+
+  - fixed bug that when reloading the macro and then loading a filter
+    configuration from file, FILTER_SET would be set to zero. Now we are both
+    setting FILTER_SET=1 and asking for the IN and OUT values of the filter
+    control PVs at the end of filter_load.
+
+  2011-11-17 (CS):
+
+  - Make sure the filter data is available after restarting SPEC (without the
+    -f option). The problem arises because SPEC does not preserve data stored
+    in arrays which are allocated using the array command. It does, however,
+    preserve the contents of associated arrays. To work around this problem,
+    we store the filter information in text format in an associated array
+    in a new global variable FILTER_TEXTDATA and parse its contents to
+    recreate the array information in FILTER_PV, FILTER_MAT, FILTER_THICK,
+    and FILTER_TRANS.
+    New internal macros:
+
+    * _filter_data2text
+    * _filter_text2data
+    * _filter_chkupdate
+
+  2012-04-05 (CS):
+
+  - reformatted code documentation to work with ROBODoc
+  - removed following macro definitions (confusing nomenclature):
+
+    * filter_more
+    * filter_less
+
+  2012-07-31 (CS):
+
+  - Changed documentation format to Sphinx specdomain.
+  - Removed many of the reduntant alternative spellings of commands.
+
+  2012-08-02 (CS):
+
+  - require three new scalers (names are configurable through global variables)
+    to hold the following information (default value of globals in
+    parentheses):
+
+    - transmission value (FILTER_TRANSM_COUNTER = "transm")
+    - binary mask with filters in/out values (FILTER_MASK_COUNTER = "filters")
+    - filter and monitor corrected intensities from the current detector,
+      specified in DET. (FILTER_CORRDET_COUNTER = "corrdet")
+
+  - added :spec:def:`_filter_user_getcounts` to be hooked into
+    :spec:def:`user_getcounts` to fill the new scalers.
+  - added :spec:def:`filter_enable` and :spec:def:`filter_disable` macros to
+    enable and disable filter macros (including the scalers and corresponding
+    `getcount` routines).
+
+  2012-11-19 (CS):
+
+  - Major revision of the :spec:def:`filter_setup` and :spec:def:`filter_load`
+    routines to ensure consistent filter behavior.
+  - Added :spec:def:`_filter_load_file` routine to load the actual filter data
+    from a file.
+  - Added :spec:def:`_filter_enter_config` for the manual configuration of
+    individual filters.
+  - Removed the option to append a filter configuration from a file to the
+    current configuration in SPEC to simplify the code and dialogs.
+  - Removed the ``-f`` option in :spec:def:`filter_load`. If a filename is
+    given, the configuration in the file is directly applied.
+  - Added global variable :spec:global:`FILTER_ENABLED` to signal whether
+    filters are currently enabled or not.
+  - Use the original global variable :spec:global:`FILTER_SET` to signal
+    whether the filters have been properly set up.
+
+  2012-12-05 (CS):
+
+  - fixed a bug in _filter_user_getcounts which could result in division by
+    zero for the calculation of S[corrdet] if the monitor counts were zero or
+    no monitor was defined.
+
+TODO:
+
+  - Dynamical energy dependent transmission caclulation in real-time based on
+    filter material and thickness.
+  - Hand some of the functionality to EPICS (faster and GUI)
+
+"""
+
+#==============================================================================
+# Global variable definitions
+#==============================================================================
+
+  #: Save the name (and path) of filter.mac [str]
+  global FILTER_MAC
+         FILTER_MAC = DOFILE
+
+  #: Flag to indicate if filters are set up [int]
+  global FILTER_SET
+         FILTER_SET = 0
+
+  #: Flag to indicate if filter are enabled [int]
+  global FILTER_ENABLED
+         FILTER_ENABLED = 0
+
+  #: Name of the filter transmission counter [str]
+  global FILTER_TRANSM_COUNTER
+         FILTER_TRANSM_COUNTER = "transm"
+
+   #: Name of the filter mask counter [str]
+  global FILTER_MASK_COUNTER
+         FILTER_MASK_COUNTER = "filters"
+
+  #: Name of the filter corrected detector counter [str]
+  global FILTER_CORRDET_COUNTER
+         FILTER_CORRDET_COUNTER = "corrdet"
+
+  #: Sleep time for filter movements in seconds [float]
+  global FILTER_SLEEP_TIME
+         FILTER_SLEEP_TIME = 0.5
+
+  # (change these variables in the startup script if necessary)
+  #: Default PVs for the filters [str]
+  global string array FILTER_PV_DEFAULT[4][255]
+         FILTER_PV_DEFAULT[0][] = "ioc:bo1"
+         FILTER_PV_DEFAULT[1][] = "ioc:bo2"
+         FILTER_PV_DEFAULT[2][] = "ioc:bo3"
+         FILTER_PV_DEFAULT[3][] = "ioc:bo4"
+
+  #: Filter configuration file [str]
+  global FILTER_CONF_FILE
+         FILTER_CONF_FILE = ""
+
+  #: default filter configuration file [str]
+  global FILTER_CONF_FILE_DEFAULT
+         unix(sprintf("dirname %s", FILTER_MAC), _dir)
+         _ll = length(_dir)
+         if (substr(_dir, _ll, 1) == "\n") _dir = substr(_dir, 1, (_ll - 1))
+         _conf_file = sprintf("%s/%s", _dir, "filter_default_conf_bmc.conf")
+         if(file_info(_conf_file,"-e")){
+           FILTER_CONF_FILE_DEFAULT = _conf_file
+         } else {
+           FILTER_CONF_FILE_DEFAULT = ""
+         }
+
+  #: Number of filters [int]
+  global FILTER_NFILTERS
+         FILTER_NFILTERS = 0
+
+  #: Value of EPICS PV when filter is out [str/int]
+  global FILTER_EPICS_OUT
+         FILTER_EPICS_OUT = "High"
+    #: Value of EPICS PV when filter is in [str/int]
+  global FILTER_EPICS_IN
+         FILTER_EPICS_IN = "Low"
+
+  #: Associate array containing the filter information in text format [str]
+  global FILTER_TEXTDATA
+
+  # arrays containing the filter information
+  # (these have a size of FILTER_NFILTERS)
+  #: Associate array with filter PV names [str]
+  global FILTER_PV
+  #: Associate array with filter materials [str]
+  global FILTER_MAT
+  #: Associate array with filter thicknesses [float]
+  global FILTER_THICK
+  #: Associate array with filter transmissions [float]
+  global FILTER_TRANS
+
+  # arrays containing the information about all possible filter combinations
+  # (these have a size of 2^FILTER_NFILTERS)
+  #: Array with all possible filter combination transmissions [float]
+  global FILTER_COMB_TRANS
+  #: Array with all possible filter combination masks [int]
+  global FILTER_MASK
+
+
+#==============================================================================
+# Macro command definitions
+#==============================================================================
+
+#------------------------------------------------------------------------------
+def filter_help '{
+  """
+  Displays the filter help text.
+
+  USAGE::
+
+    > filter_help
+
+  NOTE:
+    The help text is generated by simply displaying the text file
+    filter_mac.txt, which should reside in the same directory as filter.mac.
+    If the file does not exist, a generic help text is shown.
+
+  """
+
+  local ll, _1
+
+  unix (sprintf ("dirname %s", FILTER_MAC), _1)
+  ll = length (_1)
+  if (substr (_1, ll, 1) == "\n") _1 = substr (_1, 1, (ll - 1))
+  file = sprintf ("%s/filter_mac.txt", _1)
+  if (file_info (file, "-e")) {
+    unix (sprintf ("cat %s", file))
+  } else {
+    printf ("\n  Macros available in file filter.mac ($Revision$):\n")
+    print     "                           =========="
+    print ""
+    print "  filter_setup       - set up the filters (tranmission, PV, etc.)"
+    print "  filter_enable      - enable the filter macros and scalers"
+    print "  filter_disable     - disable the filter macros and scalers"
+    print "  filter_load        - load filter configuration from file."
+    print "  filter_save        - save filter configuration to file."
+    print "  filter_all         - put in all filters."
+    print "  filter_none        - take out all filters."
+    print "  filter_up          - move up   1 step in transmission."
+    print "  filter_down        - move down 1 step in transmission."
+    print "  filter_trans       - prints the current transmission value."
+    print "  filter_trans <val> - change filters to obtain a transmission"
+    print "                       which is equal to or lower and as close as"
+    print "                       possible to <val>."
+    print "  filter_get_trans() - returns current transmission factor."
+    print "  filter_mask <mask> - put in filters according to bits in <mask>."
+    print "  filter_get_mask()  - returns the decimal value of the current"
+    print "                       filter mask."
+    print "  filter_show        - prints current filter status/transmission."
+    print "  filter_show_conf   - prints current filter configuration."
+    print "  filter_test        - test the filters."
+
+  }
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_setup '{
+  """
+  Set up the filter configuration.
+
+  DESCRIPTION:
+    Use this routine to set up all the necessary information to use the filters
+    in SPEC.
+
+    A list of filters can be either read from a file, or entered manually.
+    For each filter, the PV channel name, filter material, thickness, and
+    transmission at the current beam energy are required.
+
+    Optionally, up to three SPEC counters can be set up to hold information
+    about the filters and transmission-corrected detector counts.
+
+  USAGE::
+
+    > filter_setup [<config_file>]
+
+  ARGUMENTS:
+
+    Optional arguments:
+      :config_file: Name (and path) of a filter configuration file.
+
+    If no argument is given, the user is prompted for the filter list during
+    the setup dialog.
+
+  NOTE:
+    The filter's material and thickness are currently not used, but are
+    necessary once the energy-dependent calculation is used to calculate the
+    transmission (which will not have to be entered any more at that stage).
+
+  """
+
+  # Parse input arguments
+  _filename = ""
+  if ($# == 1) {
+    _filename = "$1"
+  } else if ($# == 0) {
+    if(FILTER_CONF_FILE == ""){
+      FILTER_CONF_FILE = FILTER_CONF_FILE_DEFAULT
+    }
+  } else {
+    print "\aUsage:    filter_load [<filename>] [<options>]"
+    exit
+  }
+
+  # Check if user wants to load information from a file
+  if(_filename){
+    sscanf(_filename, "%s", _filename)
+    if(!file_info(_filename,"-e")){
+      printf("ERROR: File %s does not exist.\n",_filename)
+      exit
+    }
+  } else if(yesno("Do you want to load a filter configuration from file?", 0)){
+    _filename = getsval("Filter configuration file (with path):", \
+        FILTER_CONF_FILE)
+    if(!(file_info(_filename, "-e"))){
+      printf("ERROR: File %s does not exist.\n", _filename)
+      exit
+    }
+  }
+
+  # Obtain the filter information, either from file or through dialoge.
+  if(_filename){
+
+    if(FILTER_NFILTERS > 0){
+      printf("There are configured filters currently. These can be saved\n")
+      printf("to file before loading the new filter configuration.\n")
+      if (yesno("Save current filter configuration to file?", 1)){
+        filter_save
+        printf("Filter configuration has been saved.\n")
+      }
+      printf("\nThe current filter configuration will be cleared now.\n")
+      if(!yesno( "Really clear configuration?", 0)){
+        printf("Loading of filters has been aborted.\n")
+        exit
+      }
+      comment "The filter configuration has been cleared"
+    }
+
+    _filter_load_file(_filename)
+
+  } else {
+    _filter_enter_config
+  }
+
+  filter_show_conf
+
+  # Obtain the values of the EPICS channels for filters in and out.
+  FILTER_EPICS_OUT = getsval("PV Value (String) when filter is OUT of beam",\
+                              FILTER_EPICS_OUT)
+  FILTER_EPICS_IN = getsval("PV Value (String) when filter is IN the beam",\
+                             FILTER_EPICS_IN)
+
+  # Set up the counters holding the filter information.
+  show_counters()
+
+  # The transmission value
+  _valid = 0
+  while(!(_valid)){
+    print "Enter the counter for the transmission value."
+    _input = getval("(use -1 to disable)", FILTER_TRANSM_COUNTER)
+    if(_input<0){
+      FILTER_TRANSM_COUNTER = -1
+      _valid = 1
+    } else if(cnt_num(_input)<0){
+      printf("ERROR: Invalid counter (%s)\n", _input)
+    } else {
+      FILTER_TRANSM_COUNTER = cnt_num(_input)
+      _valid = 1
+    }
+  }
+
+  # The filter mask
+  _valid = 0
+  while(!(_valid)){
+    print "Enter the counter for the binary filter mask."
+    _input = getval("(use -1 to disable)", FILTER_MASK_COUNTER)
+    if(_input<0){
+      FILTER_MASK_COUNTER = -1
+      _valid = 1
+    } else if(cnt_num(_input)<0){
+      printf("ERROR: Invalid counter (%s)\n", _input)
+    } else {
+      FILTER_MASK_COUNTER = cnt_num(_input)
+      _valid = 1
+    }
+  }
+
+  # The transmission- and monitor-corrected detector counts
+  _valid = 0
+  while(!(_valid)){
+    print "Enter the counter for the transmission corrected detector counts."
+    _input = getval("(use -1 to disable)", \
+                    FILTER_CORRDET_COUNTER)
+    if(_input<0){
+      FILTER_CORRDET_COUNTER = -1
+      _valid = 1
+    } else if(cnt_num(_input)<0){
+      printf("ERROR: Invalid counter (%s)\n", _input)
+    } else {
+      FILTER_CORRDET_COUNTER = cnt_num(_input)
+      _valid = 1
+    }
+  }
+
+  # Let the world know that filters have been set up.
+  FILTER_SET = 1
+
+  if(yesno("Do you want to enable the filters now", 1)){
+    filter_enable
+  } else{
+    filter_disable
+  }
+
+  printf("To ensure that all filters work correctly, you can now\n")
+  printf("perform a filter test.\n")
+  if (yesno("Perform filter test now?", 0)){
+    filter_test
+  }
+
+  filter_show_conf
+  filter_show
+
+}'
+
+#------------------------------------------------------------------------------
+def filter_enable '{
+  """
+  Enable the filter scalers and macros.
+
+  USAGE::
+
+    > filter_enable
+
+  """
+
+  # Enable the filter scalers.
+  counter_par(FILTER_TRANSM_COUNTER, "disable", 0)
+  counter_par(FILTER_MASK_COUNTER, "disable", 0)
+  counter_par(FILTER_CORRDET_COUNTER, "disable", 0)
+
+  # Add :spec:def:`_filter_user_getcounts` to the end (0x20) of
+  # :spec:def:`user_getcounts`, but only if the filter transmission counter
+  # :spec:global:`FILTER_TRANSM_COUNTER` is enabled and is a scaler (0x02).
+
+  if(cnt_num(FILTER_TRANSM_COUNTER)<0){
+    print "WARNING: There are no counters set up to hold the transmission and"
+    print "filter information. Use \'filter_setup\' to configure the filter"
+    print "counters."
+  }
+
+  #: Add :spec:def:`_filter_user_getcounts` to :spec:def:`user_getcounts` end.
+  cdef("user_getcounts", "\n{_filter_user_getcounts}; ", \
+      cnt_mne(FILTER_TRANSM_COUNTER), 0x22)
+
+  # Set flag that filters are enabled.
+  FILTER_ENABLED = 1
+
+  p "Filters have been ENABLED."
+
+}'
+
+#------------------------------------------------------------------------------
+def filter_disable '{
+  """
+  Disable the filter scalers and macros.
+
+  USAGE::
+
+    > filter_disable
+
+  """
+
+  #: Remove :spec:def:`_filter_user_getcounts` from :spec:def:`user_getcounts`.
+  cdef("user_getcounts", "", cnt_mne(FILTER_TRANSM_COUNTER), "delete")
+
+  # Disable the filter scalers.
+  counter_par(FILTER_TRANSM_COUNTER, "disable", 1)
+  counter_par(FILTER_MASK_COUNTER, "disable", 1)
+  counter_par(FILTER_CORRDET_COUNTER, "disable", 1)
+
+  # Set flag that filters are disabled.
+  FILTER_ENABLED = 0
+
+  p "Filters have been DISABLED."
+
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_load '{
+  """
+  Load filter configuration from file.
+
+  USAGE::
+
+    > filter_load [<filename>]
+
+  ARGUMENTS:
+    Optional arguments:
+      :filename: Name of the filter configuration file to load
+
+    If no argument is given, the user is prompted for a file name.
+
+  NOTE:
+    :spec:def:`filter_load` will result in an error if the filters have never
+    been set up. Please make sure to run :spec:def:`filter_setup` at least once
+    before using :spec:def:`filter_load`.
+
+  """
+
+    local _ii, _ncount, _valid, _tmp, _filename
+
+    # parse input arguments
+    _filename = ""
+    if ($# > 0) {
+      _filename = "$1"
+    } else if ($# == 0) {
+      # nothing to do...
+    } else {
+      print "\aUsage:    filter_load [<filename>] [<options>]"
+      exit
+    }
+
+    if(_filename){
+
+      if(!(FILTER_SET)){
+        printf("ERROR: The filters have not yet been set up!\n")
+        printf("  Run \'filter_setup\' at least once before using ")
+        printf("\'filter_load\'.\n")
+        exit
+      }
+
+      sscanf(_filename, "%s", _filename)
+      if(!file_info(_filename, "-e")){
+        printf("ERROR: File %s does not exist.\n", _filename)
+        exit
+      }
+
+      _filter_load_file(_filename)
+
+      filter_show_conf
+      filter_show
+
+    } else {
+      filter_setup
+    }
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_save '{
+  """
+  Save the filter configuration to file.
+
+  USAGE::
+
+    > filter_save [<filename>]
+
+  ARGUMENTS:
+    :filename: File name for the filter configuration file to be saved.
+
+  """
+
+    local _filename, i, _ii, _cont, _str_len
+
+    if ($# == 1) {
+      _filename = "$1"
+    } else if ($# == 0) {
+
+      #build default filename based on filters and energy
+      _filename = sprintf("%s_%.2fkeV", SPEC, 12.39842/LAMBDA)
+      if(FILTER_NFILTERS < 5){
+        for(_ii=0; _ii<FILTER_NFILTERS; _ii++){
+          _filename = sprintf("%s_%s%d", _filename, \
+                              FILTER_MAT[_ii], FILTER_THICK[_ii])
+        }
+      } else {
+        _filename = sprintf("%s_%d", _filename, FILTER_NFILTERS)
+      }
+      _filename = sprintf("%s_filters.conf",_filename)
+
+      # ask for filename
+      _filename = getsval("Filename to save filter configuration:", _filename)
+
+    } else {
+      print "\aUsage:    filter_save [<filename>]"
+      exit
+    }
+    sscanf(_filename,"%s",_filename)
+
+    _cont = 0
+    while(_cont==0){
+      if(file_info(_filename,"-e")){
+        printf("File %s already exists.\n",_filename)
+        if (yesno("Do you want to overwrite it?",0)){
+          unix(sprintf("mv %s %s%s",_filename, _filename, ".bak"))
+        } else{
+          _filename = getsval("Filename to save filter configuration",\\
+              "filter_settings.conf")
+          sscanf(_filename,"%s",_filename)
+        }
+      } else{
+        _cont = 1
+      }
+    }
+
+    open(_filename)
+    fprintf(_filename,"# Filter configuration file %s\n", _filename)
+    fprintf(_filename,"# %s\n",date())
+    fprintf(_filename,"#\n")
+    fprintf(_filename,"#%24s %10s %10s %12s\n",\\
+            "EPICS PV", "Material", "thick [um]", "transmission")
+    for (ii=0; ii<FILTER_NFILTERS; ii++){
+      fprintf(_filename,"%s\n", FILTER_TEXTDATA[ii])
+    }
+    close(_filename)
+
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_show '{
+  """
+  Show the current status of the filters.
+
+  USAGE::
+
+    > filter_show
+
+  """
+
+  if(!(FILTER_SET)){
+    p "Filters have not yet been set up."
+    p "Type \'filter_setup\' to make sure that filter settings are correct."
+    exit
+  }
+
+  local _tempmask, _trans, _str1, _str2, _str3
+
+  if(FILTER_ENABLED){
+    p "Filters are currently ENABLED."
+  } else{
+    p "Filters are currently DISABLED."
+    p "Type \'filter_enable\' to enable them."
+  }
+
+  _tempmask = filter_get_mask()
+  _trans = filter_get_trans()
+  _str1 = "   "
+  _str2 = "   "
+  _str3 = " --"
+
+  for(ii=0;ii<FILTER_NFILTERS;ii++){
+    _str1 = sprintf("%s%3d",_str1,ii+1)
+    if(_tempmask & pow(2,ii)){
+      _str2 = sprintf("%s%s",_str2,"   ")
+      _str3 = sprintf("%s%s",_str3,"--|")
+    } else{
+      _str2 = sprintf("%s%s",_str2,"  |")
+      _str3 = sprintf("%s%s",_str3,"---")
+    }
+  }
+  _str3 = sprintf("%s%s",_str3,"---")
+
+  printf("\nCurrent Filter Settings:\n")
+  printf("\n")
+  printf("%s\n",_str1)
+  printf("%s\n",_str2)
+  printf("%s\n",_str3)
+  printf("\n")
+  printf("Filter transmission: %e\n",_trans)
+  printf("\n")
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_show_conf '{
+  """
+  Show the current filter configuration.
+
+  USAGE::
+
+    > filter_show_conf
+
+  """
+
+  local ii
+
+  # update arrays from associate array with filter info in text format
+  _filter_text2data
+
+  printf("\nCurrent filter configuration:\n")
+  printf("\n%3s %25s %10s %10s %12s\n",\
+         "#", "EPICS PV", "Material", "thick [um]", "transmission")
+  printf("%3s %25s %10s %10s %12s\n",\
+         "-", "--------", "--------", "----------", "------------")
+  for (ii=0; ii<FILTER_NFILTERS; ii++){
+    printf("%3d %25s %10s %10.2f %12.6g\n", ii+1, FILTER_PV[ii],\
+            FILTER_MAT[ii], FILTER_THICK[ii], FILTER_TRANS[ii])
+  }
+  printf("\nAll available filter transmissions:\n")
+  printf("\n%6s %12s\n", "mask" "transmission")
+  printf("%3s %12s\n", "-", "------------")
+  for (ii = 0; ii < pow(2, FILTER_NFILTERS); ii--) {
+    printf("%6d %12.6g\n", FILTER_MASK[ii], FILTER_COMB_TRANS[ii])
+  }
+  printf("\n")
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_up '{
+  """
+  Move up 1 step in transmission (increase transmission).
+
+  DESCRIPTION:
+    Starting from the current filter setting, the filter combination with the
+    next higher achievable transmission factor is calculated and the filters
+    are changed accordingly.
+
+  USAGE::
+
+    > filter_up
+
+  """
+
+  local _ind
+
+  _filter_chkupdate
+
+  _ind = _filter_get_ind()
+  if ((_ind < filter_max()) &&\
+      (FILTER_COMB_TRANS[_ind] != FILTER_COMB_TRANS[filter_max()])){
+
+    # deal with non-unique combinations
+    _step = 1
+    while (_step > 0){
+      if (FILTER_COMB_TRANS[_ind] == FILTER_COMB_TRANS[_ind+_step]){
+        _step++
+      } else {
+        filter_mask FILTER_MASK[_ind+_step]
+        _step = -1
+      }
+    }
+  } else{
+    printf("Step up not possible, already at highest transmission.")
+  }
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_down '{
+  """
+  Move down 1 step in transmission (increase transmission).
+
+  DESCRIPTION:
+    Starting from the current filter setting, the filter combination with the
+    next lower achievable transmission factor is calculated and the filters
+    are changed accordingly.
+
+  USAGE::
+
+    > filter_down
+
+  """
+
+  local _ind, _step
+
+  _filter_chkupdate
+
+  _ind = _filter_get_ind()
+  if ((_ind > 0) && (FILTER_COMB_TRANS[_ind] != FILTER_COMB_TRANS[0])){
+
+    # deal with non-unique combinations
+    _step = 1
+    while (_step > 0){
+      if (FILTER_COMB_TRANS[_ind] == FILTER_COMB_TRANS[_ind-_step]){
+        _step++
+      } else {
+        filter_mask FILTER_MASK[_ind-_step]
+        _step = -1
+      }
+    }
+  } else{
+    printf("Step down not possible, already at lowest transmission.")
+  }
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_trans '{
+  """
+  Display current transmission value or change the filter transmission to the
+  requested value.
+
+  DESCRIPTION:
+    With no input arguments given, this prints the current transmission value.
+    If an input argument <val> is specified, the filter combination with the
+    closest obtainable transmission value which is either equal to or lower
+    than the requested value <val> is calculated and the filters are changed
+    accordingly.
+
+  USAGE::
+
+    > filter_trans <val>
+
+  ARGUMENTS:
+    :val: Transmission value
+
+  EXAMPLE::
+
+    > filter_trans 1.05e-6
+
+  NOTE:
+    The transmission value is calculated based on the information entered in
+    :spec:def:`filter_setup`.
+
+  SEE ALSO
+    :spec:def:`filter_setup`, :spec:def:`filter_up`, :spec:def:`filter_down`
+
+
+  """
+
+  local _ii, _ind
+
+  _filter_chkupdate
+
+  if ($# == 0) {
+    printf("Filter Transmission: %e\n", filter_get_trans())
+  } else if ($# == 1){
+    _target = $1
+    if((_target < 1e-30) || (_target > 1)){
+      printf("Error: transmission value must be between 0 and 1")
+	exit
+    }
+    _ind = -1
+    _ii = 0
+    while ((_ii <filter_max()+1) && (FILTER_COMB_TRANS[_ii] <= _target)){
+      _ind = _ii
+      _ii++
+    }
+    if ((_ind>=0) && (_ind < filter_max()+1)){
+      filter_mask FILTER_MASK[_ind]
+      printf("Requested Transmission: %g --> ",$1)
+      printf("Next lower or equal transmission is %g.\n",\
+              filter_get_trans())
+    } else if (_ind == -1){
+      # transmission lower than all filters combined
+      # throw in all filters
+      filter_all
+      printf("Requested Transmission: %g --> ",$1)
+      printf("is lower than all filters combined.\nUsing all filters. ")
+      printf("Transmission is %g.\n", filter_get_trans())
+    } else {
+      printf("Could not find appropriate transmission value. ")
+      printf("Not changing filters...")
+      exit
+    }
+  } else {
+    printf("Error: wrong number of input arguments in call to filter_trans.\n")
+    printf("  Usage: filter_trans [transmission_value]")
+    exit
+  }
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_get_trans() '{
+  """
+  Calculate and return the current filter transmission.
+
+  USAGE::
+
+    > trans = filter_get_trans()
+
+  RETURNS:
+    :trans: The current filter transmission
+
+  SEE ALSO:
+    :spec:def:`filter_trans`
+
+  """
+
+  local trans, ii
+
+  # update arrays from associate array with filter info in text format
+  _filter_text2data
+
+  trans = 1
+  for (ii=0;ii<FILTER_NFILTERS;ii++){
+    if(epics_get(FILTER_PV[ii][]) == FILTER_EPICS_IN){
+      trans = trans * FILTER_TRANS[ii]
+    }
+  }
+
+  return(trans)
+
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_all '{
+  """
+  Put in all filters.
+
+  USAGE::
+
+    > filter_all
+
+  """
+
+  filter_mask pow(2,FILTER_NFILTERS)-1
+
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_none '{
+  """
+  Take out all the filters.
+
+  USAGE::
+
+    > filter_none
+
+  """
+
+  filter_mask 0
+
+} '
+
+
+#------------------------------------------------------------------------------
+def filter_mask '{
+  """
+  Display the current binary filter mask or put in all the filters specified
+  by a binary mask input argument.
+
+  DESCRIPTION:
+    With no input argument is specified, the current binary filter mask value
+    is displayed.
+    If the input argument <mask> is given, the filter combination specified by
+    the mask is inserted. The filter mask is specified as a binary mask with
+    the first filter in the configuration corresponding to the smallest bit.
+
+  USAGE::
+
+    > filter_mask         # prints the current filter mask
+    > filter_mask <mask>  # puts in filters according to <mask>
+
+  ARGUMENTS:
+    :mask: The binary mask specifying which filters will be inserted.
+
+  EXAMPLES::
+
+    > filter_mask 6       # puts in filters #2 and #3
+    > filter_mask 0x15    # puts in filters #1, #3, and #5
+
+  SEE ALSO:
+    :spec:def:`filter_get_mask`
+
+  """
+
+    local mask, ii
+
+    if (($# != 0) && ($# != 1)) {
+      print "\a\nUsage:   filter_mask [<mask>]"
+      print ""
+      print "  Filter 1  (most   upstream) is mask = 0x0001"
+      print "  Filter 4  (most downstream) is mask = 0x0008"
+      print "  Filters 1-4 (all filters)  is mask = 0x000F"
+      exit
+    }
+
+    # update arrays from associate array with filter info in text format
+    _filter_text2data
+
+    if ($# == 0) {
+      mask = filter_get_mask()
+      printf ("Filter mask = %d (0x%04x)\n", mask, mask)
+      _1 = mask
+    } else {
+      mask = $1
+      if ((mask < 0) || (mask > pow(2,FILTER_NFILTERS)-1)) {
+        printf("\a\n<mask> out of range 0 - %d.",pow(2,FILTER_NFILTERS)-1)
+        exit
+      }
+
+      # put in new filters first
+      for (ii=0;ii<FILTER_NFILTERS;ii++){
+        if(mask & pow(2,ii)){
+          epics_put(FILTER_PV[ii][],FILTER_EPICS_IN)
+        }
+      }
+      sleep(FILTER_SLEEP_TIME)
+
+      # then take out old filters
+      for (ii=0;ii<FILTER_NFILTERS;ii++){
+        if((mask & pow(2,ii)) == 0){
+          epics_put(FILTER_PV[ii][],FILTER_EPICS_OUT)
+        }
+      }
+      sleep(FILTER_SLEEP_TIME)
+    }
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_get_mask() '{
+  """
+  Return the current decimal value of the filter mask as read from the EPICS
+  binary input channels.
+
+  USAGE::
+
+    > mask = filter_get_mask()
+
+  RETURNS:
+    :mask: The binary value of the current filter mask
+
+  EXAMPLE::
+
+    > filter_mask 0x0013    # puts in filters #1, #2, #5
+    > p filter_get_mask()   # returns 19 (= 0x0013)
+
+  SEE ALSO:
+    :spec:def:`filter_mask`
+
+  """
+
+  local mask, ii
+
+  # update arrays from associate array with filter info in text format
+  _filter_text2data
+
+  mask = 0
+
+  for (ii=0;ii<FILTER_NFILTERS;ii++){
+    if(epics_get(FILTER_PV[ii][]) == FILTER_EPICS_IN){
+      mask = mask + pow(2,ii)
+    }
+  }
+
+  return(mask)
+
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_test'{
+  """
+  Test all filters. This inserts all filters first, then removes and
+  reinserts them one by one.
+
+  USAGE::
+
+    > filter_test
+
+  """
+
+  local ii, _mask
+
+  filter_all
+
+  for(ii=0; ii < FILTER_NFILTERS; ii++){
+    printf("Filter %d\n",ii+1)
+    _mask = filter_max() - pow(2,ii)
+    filter_mask _mask
+    filter_all
+  }
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_max() '{
+  """
+  Return the maximum allowed value for filter mask
+
+  USAGE::
+
+    > max_mask = filter_max()
+
+  """
+
+  return(pow(2,FILTER_NFILTERS)-1)
+
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_get_trans_up() '{
+  """
+  Calculate the next higher possible transmission factor.
+
+  USAGE::
+
+    > next_higher_trans = filter_get_trans_up()
+
+  """
+
+  local _ind
+
+  _filter_chkupdate
+
+  _ind = _filter_get_ind()
+  if ((_ind < filter_max()) &&\
+      (FILTER_COMB_TRANS[_ind] != FILTER_COMB_TRANS[filter_max()])){
+
+    # deal with non-unique combinations
+    _step = 1
+    while (_step > 0){
+      if (FILTER_COMB_TRANS[_ind] == FILTER_COMB_TRANS[_ind+_step]){
+        _step++
+      } else {
+        _trans = FILTER_COMB_TRANS[_ind+_step]
+        _step = -1
+      }
+    }
+  } else{
+    printf("Step up not possible, already at highest transmission.")
+    _trans = -1
+  }
+  return(_trans)
+}'
+
+
+#------------------------------------------------------------------------------
+def filter_get_trans_down() '{
+  """
+  Calculate the next lower possible transmission factor.
+
+  USAGE::
+
+    > next_lower_trans = filter_get_trans_down()
+
+  """
+
+  local _ind
+
+  _filter_chkupdate
+
+  _ind = _filter_get_ind()
+  if ((_ind > 0) &&\
+      (FILTER_COMB_TRANS[_ind] != FILTER_COMB_TRANS[0])){
+
+    # deal with non-unique combinations
+    _step = 1
+    while (_step > 0){
+      if (FILTER_COMB_TRANS[_ind] == FILTER_COMB_TRANS[_ind-_step]){
+        _step++
+      } else {
+        _trans = FILTER_COMB_TRANS[_ind-_step]
+        _step = -1
+      }
+    }
+  } else{
+    printf("Step down not possible, already at lowest transmission.")
+    _trans = -1
+  }
+  return(_trans)
+}'
+
+
+#==============================================================================
+# Internal macros
+#==============================================================================
+
+#------------------------------------------------------------------------------
+def _filter_user_getcounts '{
+  """
+  Obtain the filter transmission, binary mask, and transmission corrected
+  detector counts and store them in the appropriate scalers.
+
+  DESCRIPTION:
+    The filter transmission counter holds the current transmission value for
+    the filters. The filter mask counter holds the binary mask corresponding to
+    the current combination of filter blades in the beam (in = 1, out = 0).
+    The corrected detector counts are the detector counts S[DET] corrected for
+    the filter transmission and the monitor counts (defined by S[MON]),
+    resulting in units of [counts/monitor count].
+
+  NOTE:
+    This macro is to be hooked (cdef) into the very end of
+    :spec:def:`user_getcounts`.
+
+  USAGE::
+
+    > _filter_user_getcounts
+
+  """
+
+  if(cnt_num(FILTER_TRANSM_COUNTER) > -1){
+    S[cnt_num(FILTER_TRANSM_COUNTER)] = filter_get_trans()
+  }
+
+  if(cnt_num(FILTER_MASK_COUNTER) > -1){
+    S[cnt_num(FILTER_MASK_COUNTER)] = filter_get_mask()
+  }
+
+  if(cnt_num(FILTER_CORRDET_COUNTER) > -1){
+    if(cnt_num(MON) < 0){
+     S[cnt_num(FILTER_CORRDET_COUNTER)] = S[DET]/filter_get_trans()
+    } else {
+      if(S[MON] == 0){
+	      S[cnt_num(FILTER_CORRDET_COUNTER)] = -1
+	    } else {
+	      S[cnt_num(FILTER_CORRDET_COUNTER)] = S[DET]/filter_get_trans()/S[MON]
+  	  }
+    }
+  }
+}'
+
+
+#------------------------------------------------------------------------------
+def _filter_get_ind() '{
+  """
+  Return the sorted index of the current filter mask.
+
+  USAGE::
+
+    > current_index = _filter_get_ind()
+
+  """
+
+  local _ii, _mask
+
+  _nelem = filter_max()+1
+
+  local array _tmp[_nelem]
+
+  _mask = filter_get_mask()
+  _tmp = fabs(FILTER_MASK - _mask)
+  _ind = array_op("i_at_min",_tmp)
+  return(_ind)
+}'
+
+
+#------------------------------------------------------------------------------
+def _filter_calculate '{
+  """
+  Calculate all the different possible filter combinations and sort according
+  to their transmission values.
+
+  USAGE::
+
+    > _filter_calculate
+
+  """
+
+  local _nelem, _ii, _jj, _trans, _ind
+  local _comb_trans, _mask_array, _sort_index
+
+  # update arrays from associate array with filter info in text format
+  _filter_text2data
+
+  _nelem = filter_max()+1
+  array _comb_trans[_nelem]
+  array _mask_array[_nelem]
+  array _sort_index[_nelem]
+
+  array FILTER_COMB_TRANS[_nelem]
+  array FILTER_MASK[_nelem]
+
+  # for each combination of filters, calculate the binary mask and the total
+  # transmission
+  for (_ii=0; _ii<_nelem; _ii++){
+    _mask_array[_ii] = _ii
+    _trans = 1;
+    for (_jj=0;_jj<FILTER_NFILTERS; _jj++){
+      if(_ii & pow(2,_jj)){
+        _trans = _trans * FILTER_TRANS[_jj]
+      }
+    }
+    _comb_trans[_ii]=_trans
+  }
+
+  # find the indices of the sorted filter transmissions in ascending order
+  local array _trans_sort[_nelem], _tmp[_nelem]
+
+  # sort transmission values in ascending order
+  # for large arrays, this sorting operation may be very slow, but should be
+  # ok for 4 or 8 filters
+  _trans_sort = array_op("sort",_comb_trans)
+  for (_ii=0; _ii<_nelem; _ii++){
+    _tmp = fabs(_trans_sort[_ii] - _comb_trans)
+    _ind = array_op("i_at_min",_tmp)
+    _sort_index[_ii]=_ind
+  }
+
+  for (_ii=0; _ii<_nelem; _ii++){
+    FILTER_COMB_TRANS[_ii] = _comb_trans[_sort_index[_ii]]
+    FILTER_MASK[_ii] = _mask_array[_sort_index[_ii]]
+  }
+}'
+
+
+#------------------------------------------------------------------------------
+def _filter_enter_config '{
+  """
+  Enter the filter configuration information through an input dialog.
+  """
+
+  local _nfilters, _nfilters_old
+  local _filter_pv, _filter_mat, _filter_thick, _filter_trans
+  local ii
+
+  if(FILTER_NFILTERS > 0){
+    _filter_text2data
+  }
+
+  _nfilters_old = FILTER_NFILTERS
+  _nfilters = getval("Number of filters", _nfilters_old)
+
+  for (ii = 0; ii < _nfilters; ii++){
+    printf("\nConfiguring filter %d\n", ii+1)
+    if (ii < _nfilters_old){
+      if ((FILTER_PV[ii] == "") &&\
+        (ii < array_op("rows", FILTER_PV_DEFAULT))){
+        FILTER_PV[ii] = FILTER_PV_DEFAULT[ii]
+      }
+      _filter_pv[ii] = getsval("EPICS PV", FILTER_PV[ii])
+      _filter_mat[ii] = getsval("Filter material", FILTER_MAT[ii])
+      _filter_thick[ii] = getval("Filter thickness [um]", FILTER_THICK[ii])
+      _filter_trans[ii] = getval("Filter transmission", FILTER_TRANS[ii])
+    } else {
+      if (ii < array_op("rows", FILTER_PV_DEFAULT)){
+        _filter_pv[ii] = getsval("EPICS PV", FILTER_PV_DEFAULT[ii])
+      } else {
+        _filter_pv[ii] = getsval("EPICS PV", "")
+      }
+      _filter_mat[ii] = getsval("Filter material", "")
+      _filter_thick[ii] = getval("Filter thickness [um]", 0)
+      _filter_trans[ii] = getval("Filter transmission", 0)
+    }
+  }
+
+  # (re)initialize global arrays
+  global string array FILTER_PV[_nfilters][255]
+  global string array FILTER_MAT[_nfilters][255]
+  global array FILTER_THICK[_nfilters]
+  global array FILTER_TRANS[_nfilters]
+
+  # assign the global variables
+  FILTER_NFILTERS = _nfilters
+  for(ii = 0; ii < _nfilters; ii++){
+    FILTER_PV[ii] = _filter_pv[ii]
+    FILTER_MAT[ii] = _filter_mat[ii]
+    FILTER_THICK[ii] = _filter_thick[ii]
+    FILTER_TRANS[ii] = _filter_trans[ii]
+  }
+
+  # Update the associate array with the filter info in text format.
+  _filter_data2text
+
+  # Calculate all combinations of filters.
+  _filter_calculate
+
+}'
+
+
+#------------------------------------------------------------------------------
+def _filter_load_file(filename) '{
+  """
+  Load a filter configuration from file.
+
+  USAGE::
+
+    > <n_filt> = _filter_load_file(filename)
+
+  ARGUMENTS:
+    :filename: Name (and path) of the filter configuration file.
+
+  RETURNS:
+    :n_filt: The number of filters found in the configuration file.
+
+  SEE ALSO:
+    :spec:def:`filter_load`,
+    :spec:def:`filter_setup`
+
+  """
+
+  local _filter_cnt, _line_num, _str, _ncount, _filter_linedata
+
+  if(getline(filename, "open")){
+      printf("Error opening the filter configuration file.")
+  }
+
+  # Read and parse the file contents
+  _filter_cnt = 0
+  _line_num = 0
+  _str = getline(filename, 0)
+  while(_str != -1){
+    _line_num++
+    if((substr(_str,0,1) != "#") && (substr(_str,0,1) != "\n")){
+      _ncount = split(_str, _tmp)
+      if (!(_ncount == 4 || _ncount == 0)){
+        printf("Cannot read filter data:\n")
+        printf("  Wrong number of filter values on line %d.\n", _line_num)
+        printf("  %s\n", _str)
+        getline(filename, "close")
+        exit
+      } else{
+        if (_ncount == 4){
+          # put line from file into associate array as string
+          _filter_linedata[_filter_cnt] = _str
+          _filter_cnt++
+        }
+      }
+    }
+    _str = getline(filename)
+  }
+  getline(filename, "close")
+
+  # Process the data if valid filter configuration was found
+  if(_filter_cnt > 0){
+
+    FILTER_CONF_FILE = filename
+    FILTER_NFILTERS = _filter_cnt
+
+    # reinitialize associate array and fill with the new values
+    unglobal FILTER_TEXTDATA
+    global FILTER_TEXTDATA
+    for (_ii = 0; _ii < FILTER_NFILTERS; _ii++) {
+      FILTER_TEXTDATA[_ii] = _filter_linedata[_ii]
+    }
+
+    # update arrays from associate array with filter info in text format
+    if(FILTER_NFILTERS>0){
+      _filter_text2data
+    }
+
+    # calculate all combinations of filters
+    _filter_calculate
+
+  } else {
+    printf("ERROR: Could not find any valid filter information in %s.\n", \
+        filename)
+  }
+
+  return(_filter_cnt)
+
+}'
+
+
+#------------------------------------------------------------------------------
+def _filter_text2data '{
+  """
+  Recreate the filter data arrays from the string elements of the associated
+  array :spec:global:`FILTER_TEXTDATA`.
+
+  USAGE::
+
+    > _filter_text2data
+
+  """
+
+  # reinitialize arrays
+  unglobal FILTER_PV, FILTER_MAT, FILTER_THICK, FILTER_TRANS
+  global string array FILTER_PV[FILTER_NFILTERS][255]
+  global string array FILTER_MAT[FILTER_NFILTERS][255]
+  global array FILTER_THICK[FILTER_NFILTERS]
+  global array FILTER_TRANS[FILTER_NFILTERS]
+
+  for (_ii = 0; _ii < FILTER_NFILTERS; _ii++) {
+    split(FILTER_TEXTDATA[_ii],_filter_filterdata)
+    FILTER_PV[_ii] = _filter_filterdata[0]
+    FILTER_MAT[_ii] = _filter_filterdata[1]
+    sscanf(_filter_filterdata[2],"%g",FILTER_THICK[_ii])
+    sscanf(_filter_filterdata[3],"%g",FILTER_TRANS[_ii])
+  }
+
+}'
+
+#------------------------------------------------------------------------------
+def _filter_data2text '{
+  """
+  Convert the array data to string elements of the associated array
+  :spec:global:`FILTER_TEXTDATA`.
+
+  USAGE::
+
+    > _filter_data2text
+
+  """
+
+  unglobal FILTER_TEXTDATA
+  global FILTER_TEXTDATA
+
+  for (ii=0; ii<FILTER_NFILTERS; ii++){
+    FILTER_TEXTDATA[ii] = sprintf("%25s %10s %10.2f %12.6g", \\
+            FILTER_PV[ii],FILTER_MAT[ii], FILTER_THICK[ii], FILTER_TRANS[ii])
+  }
+
+}'
+
+
+#------------------------------------------------------------------------------
+def _filter_chkupdate '{
+  """
+  Check whether the filter calculations need to be updated due to a loss of
+  the information in :spec:global:`FILTER_COMB_TRANS` (for example due to a
+  restart of SPEC).
+
+  USAGE::
+
+    > _filter_chkupdate
+
+  """
+
+  # the last element of the combined filter transmissions should always be
+  # equal to 1. If not, recalculate the transmissions.
+  if(FILTER_COMB_TRANS[-1] < 1){
+    _filter_calculate
+  }
+
+  # if this did not fix the problem there is something wrong with the config...
+  if(FILTER_COMB_TRANS[-1] < 1){
+    printf("ERROR: There seems to be something wrong with the filter\n")
+    printf("configuration. Please run \'filter_config\'. Aborting...\n")
+    exit
+  }
+}'
+
+#==============================================================================
+# End of $Id$
+#==============================================================================
