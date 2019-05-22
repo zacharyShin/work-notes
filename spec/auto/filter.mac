@@ -833,7 +833,7 @@ def filter_up '{
       }
     }
   } else{
-    printf("Step up not possible, already at highest transmission.")
+    printf("Step up not possible, already at highest transmission.\n")
   }
 }'
 
@@ -872,7 +872,7 @@ def filter_down '{
       }
     }
   } else{
-    printf("Step down not possible, already at lowest transmission.")
+    printf("Step down not possible, already at lowest transmission.\n")
   }
 }'
 
