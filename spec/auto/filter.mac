@@ -1091,6 +1091,8 @@ def filter_mask '{
         }
       }
       sleep(FILTER_SLEEP_TIME)
+
+      epics_put("1w1a:callPFCU", 1)
     }
 }'
 
