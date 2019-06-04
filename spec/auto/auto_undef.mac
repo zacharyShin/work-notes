@@ -1,0 +1,151 @@
+"""
+宏命令文件：filter.mac
+
+全局变量：
+
+
+  # 保存 filter.mac 路径与文件名，默认值DOFILE [str]
+  global FILTER_MAC
+
+  #: 标识滤光片是否设置的 flag，默认值0 [int]
+  global FILTER_SET
+
+  #: 标识滤光片是否enable，默认值0 [int]
+  global FILTER_ENABLED
+
+  #: 滤光片透过率计数器名称 [str]
+  global FILTER_TRANSM_COUNTER
+
+   #: 滤光片掩码计数器名称 [str]
+  global FILTER_MASK_COUNTER
+
+  #: 滤光片校正探测器计数器名称 [str]
+  global FILTER_CORRDET_COUNTER
+
+  #: 滤光片移动的休眠时间（秒），默认0.5s [float]
+  global FILTER_SLEEP_TIME
+
+  # (若需要则在startup中更改下列变量)
+  #: 滤光片默认PV [str]
+  global string array FILTER_PV_DEFAULT[4][255]
+
+  #: 滤光片设置文件 [str]
+  global FILTER_CONF_FILE
+
+  #: 默认滤光片设置文件 [str]
+  global FILTER_CONF_FILE_DEFAULT
+
+  #: 滤光片数量 [int]
+  global FILTER_NFILTERS
+
+  #: 滤光片拔出的 EPICS PV值 [str/int]
+  global FILTER_EPICS_OUT
+  #: 滤光片插入的 EPICS PV值 [str/int]
+  global FILTER_EPICS_IN
+
+  #: 以文本格式保存的滤光片信息相关数组 [str]
+  global FILTER_TEXTDATA
+
+  # 包含滤光片信息的数组
+  # (数组大小为 FILTER_NFILTERS)
+  #: 滤光片 PV 名称数组 [str]
+  global FILTER_PV
+  #: 滤光片材质数组 [str]
+  global FILTER_MAT
+  #: 滤光片厚度数组 [float]
+  global FILTER_THICK
+  #: 滤光片透过率数组 [float]
+  global FILTER_TRANS
+
+  # 包含所有可能滤光片组合信息的数组
+  # (数组大小为 2^FILTER_NFILTERS)
+  #: 包含所有可能的滤光片 透过率 的数组 [float]
+  global FILTER_COMB_TRANS
+  #: 包含所有可能的滤光片 掩码 的数组 [int]
+  global FILTER_MASK
+
+命令/函数：
+
+filter_help
+filter_setup
+filter_enable
+filter_disable
+filter_load
+filter_save
+filter_show
+filter_show_conf
+filter_up
+filter_down
+filter_trans
+filter_get_trans()
+filter_all
+filter_none
+filter_mask
+filter_get_mask()
+filter_test
+filter_max()
+filter_get_trans_up()
+filter_get_trans_down()
+
+_filter_user_getcounts
+_filter_get_ind()
+_filter_calculate
+_filter_enter_config
+_filter_load_file(filename)
+_filter_text2data
+_filter_data2text
+_filter_chkupdate
+
+"""
+
+
+undef filter_help
+undef filter_setup
+undef filter_enable
+undef filter_disable
+undef filter_load
+undef filter_save
+undef filter_show
+undef filter_show_conf
+undef filter_up
+undef filter_down
+undef filter_trans
+undef filter_get_trans
+undef filter_all
+undef filter_none
+undef filter_mask
+undef filter_get_mask
+undef filter_test
+undef filter_max
+undef filter_get_trans_up
+undef filter_get_trans_down
+undef _filter_user_getcounts
+undef _filter_get_ind
+undef _filter_calculate
+undef _filter_enter_config
+undef _filter_load_file
+undef _filter_text2data
+undef _filter_data2text
+undef _filter_chkupdate
+
+
+unglobal FILTER_MAC
+unglobal FILTER_SET
+unglobal FILTER_ENABLED
+unglobal FILTER_TRANSM_COUNTER
+unglobal FILTER_MASK_COUNTER
+unglobal FILTER_CORRDET_COUNTER
+unglobal FILTER_SLEEP_TIME
+unglobal string array FILTER_PV_DEFAULT[4][255]
+unglobal FILTER_CONF_FILE
+unglobal FILTER_CONF_FILE_DEFAULT
+unglobal FILTER_NFILTERS
+unglobal FILTER_EPICS_OUT
+unglobal FILTER_EPICS_IN
+unglobal FILTER_TEXTDATA
+unglobal FILTER_PV
+unglobal FILTER_MAT
+unglobal FILTER_THICK
+unlobal FILTER_TRANS
+unglobal FILTER_COMB_TRANS
+unglobal FILTER_MASK
